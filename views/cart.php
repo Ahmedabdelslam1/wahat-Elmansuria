@@ -5,102 +5,114 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title>السلة - <?= e(APP_NAME) ?></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root{
+      --bg:#f4f5fa; --surface:#ffffff; --text:#181822; --muted:#8b8b9a;
+      --primary:#ff3b30; --primary-dark:#d32f2f; --accent2:#ff9500;
+      --dark:#15151f; --dark2:#1f1f2c; --border:#ececf2; --radius:16px;
+    }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: #fff8e1;
-      color: #212121;
-      padding-bottom: 140px;
+      font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 220px;
     }
-    .header {
-      background: linear-gradient(160deg, #1a0f08, #3e2723);
-      color: #d4af37;
-      padding: 18px 20px;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+    .topbar {
+      background: linear-gradient(135deg, var(--dark), var(--dark2));
+      padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.25);
     }
-    .header h1 { font-size: 20px; }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; text-decoration: none; flex-shrink: 0;
+    }
+    .icon-btn svg { width: 18px; height: 18px; }
+    .topbar h1 { color: #fff; font-size: 16px; font-weight: 800; flex: 1; text-align: center; }
+
     .items { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .item {
-      background: #fff;
-      border-radius: 14px;
+      background: var(--surface);
+      border-radius: var(--radius);
       padding: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 10px rgba(20,20,30,0.04);
     }
-    .item h3 { font-size: 14px; margin-bottom: 4px; }
-    .item .price { color: #e65100; font-weight: bold; }
+    .item h3 { font-size: 14px; margin-bottom: 4px; font-weight: 800; }
+    .item .price { color: var(--muted); font-size: 12.5px; }
     .qty { display: flex; align-items: center; gap: 10px; }
     .qty button {
       width: 30px; height: 30px;
       border-radius: 50%;
-      border: 1px solid #d4af37;
-      background: #fff;
-      color: #3e2723;
+      border: none;
+      background: var(--bg);
+      color: var(--text);
       font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
     }
+    .qty button.plus { background: var(--primary); color: #fff; }
     .summary {
       position: fixed;
-      bottom: 60px;
-      left: 0; right: 0;
-      background: #fff;
-      padding: 16px 20px;
-      border-top: 2px solid #d4af37;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      padding: 16px 18px calc(16px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.08);
     }
-    .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
-    .summary-row.total { font-size: 18px; font-weight: bold; color: #e65100; margin-top: 8px; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13.5px; color: var(--muted); }
+    .summary-row.total { font-size: 18px; font-weight: 800; color: var(--text); margin-top: 8px; }
     .order-btn {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(90deg, #d4af37, #f5c542);
-      color: #1a0f08;
+      padding: 15px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      color: #fff;
       border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: bold;
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 800;
       cursor: pointer;
       margin-top: 12px;
+      box-shadow: 0 10px 24px -6px rgba(255,59,48,0.5);
     }
     .order-btn:disabled { opacity: 0.6; cursor: wait; }
-    .empty { text-align: center; padding: 60px 20px; color: #8d6e63; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty a { color: var(--primary); font-weight: 800; text-decoration: none; }
     .form-section { padding: 0 16px 16px; }
     .form-section input, .form-section textarea {
       width: 100%;
-      padding: 12px;
+      padding: 12px 14px;
       margin-bottom: 10px;
-      border: 1px solid #e0d5c0;
-      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: inherit;
       font-size: 14px;
-      background: #fff;
+      background: var(--surface);
     }
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0; right: 0;
-      background: #1a0f08;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0 14px;
-      border-top: 2px solid #d4af37;
-      z-index: 100;
-    }
-    .nav-item { text-align: center; color: #a1887f; font-size: 11px; text-decoration: none; flex: 1; }
-    .nav-item.active { color: #d4af37; }
-    .nav-item .icon { font-size: 20px; display: block; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
-  <div class="header">
+  <div class="topbar">
+    <a class="icon-btn" href="?page=menu" title="رجوع للمنيو">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
     <h1>🛒 السلة</h1>
+    <a class="icon-btn" href="?page=login" title="دخول المستخدمين والأدمن">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </a>
   </div>
 
   <div class="items" id="cartItems"></div>
@@ -113,17 +125,11 @@
 
   <div class="summary" id="summary" style="display:none">
     <div class="summary-row"><span>المجموع الفرعي</span><span id="subtotal">0</span></div>
-    <div class="summary-row total"><span>الإجمالي</span><span id="total">0</span></div>
+    <div class="summary-row total"><span>الإجمالي</span><span id="total">0 ج.م</span></div>
     <button class="order-btn" id="orderBtn" onclick="placeOrder()">تأكيد الطلب الآن</button>
   </div>
 
-  <div class="empty" id="emptyMsg">السلة فارغة<br><a href="?page=menu" style="color:#d4af37">تصفح المنيو</a></div>
-
-  <div class="bottom-nav">
-    <a class="nav-item" href="?page=menu"><span class="icon">🏠</span>الرئيسية</a>
-    <a class="nav-item active" href="?page=cart"><span class="icon">🛒</span>السلة</a>
-    <a class="nav-item" href="?page=login"><span class="icon">👤</span>حسابي</a>
-  </div>
+  <div class="empty" id="emptyMsg">السلة فارغة<br><br><a href="?page=menu">تصفح المنيو</a></div>
 
   <script>
     let cart = JSON.parse(localStorage.getItem('wahat_cart') || '[]');
@@ -155,7 +161,7 @@
         h3.textContent = item.name;
         const price = document.createElement('div');
         price.className = 'price';
-        price.textContent = item.price + ' × ' + item.qty + ' = ' + (item.price * item.qty);
+        price.textContent = item.price + ' × ' + item.qty + ' = ' + (item.price * item.qty) + ' ج.م';
         info.append(h3, price);
 
         const qty = document.createElement('div');
@@ -164,8 +170,10 @@
         minus.textContent = '−';
         minus.onclick = () => changeQty(idx, -1);
         const count = document.createElement('span');
+        count.style.fontWeight = '800';
         count.textContent = item.qty;
         const plus = document.createElement('button');
+        plus.className = 'plus';
         plus.textContent = '+';
         plus.onclick = () => changeQty(idx, 1);
         qty.append(minus, count, plus);
@@ -175,8 +183,8 @@
       });
 
       const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
-      document.getElementById('subtotal').textContent = sub;
-      document.getElementById('total').textContent = sub;
+      document.getElementById('subtotal').textContent = sub + ' ج.م';
+      document.getElementById('total').textContent = sub + ' ج.م';
     }
 
     function changeQty(idx, delta) {

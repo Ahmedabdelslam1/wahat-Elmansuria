@@ -5,12 +5,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title>فاتورة - <?= e(APP_NAME) ?></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: #f5f0e8;
+      font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+      background: #f4f5fa;
       color: #212121;
       padding: 20px;
     }
@@ -18,53 +20,53 @@
       max-width: 420px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 24px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-      border: 2px solid #d4af37;
+      border: 2px solid #ff3b30;
     }
     .inv-header {
       text-align: center;
-      border-bottom: 2px dashed #d4af37;
+      border-bottom: 2px dashed #ff3b30;
       padding-bottom: 16px;
       margin-bottom: 16px;
     }
-    .inv-header h1 { color: #3e2723; font-size: 22px; margin-bottom: 4px; }
-    .inv-header .sub { color: #8d6e63; font-size: 12px; }
+    .inv-header h1 { color: #1f1f2c; font-size: 22px; margin-bottom: 4px; }
+    .inv-header .sub { color: #8b8b9a; font-size: 12px; }
     .badge {
       display: inline-block;
-      background: #d4af37;
-      color: #1a0f08;
+      background: #ff3b30;
+      color: #15151f;
       padding: 4px 12px;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 11px;
       font-weight: bold;
       margin-top: 8px;
     }
-    .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 16px; color: #5d4037; }
+    .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 16px; color: #3a3a4d; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
     th {
-      background: #fff8e1;
+      background: #f4f5fa;
       padding: 8px;
       text-align: right;
-      border-bottom: 1px solid #e0d5c0;
+      border-bottom: 1px solid #ececf2;
     }
-    td { padding: 8px; border-bottom: 1px solid #f5f0e8; }
+    td { padding: 8px; border-bottom: 1px solid #f4f5fa; }
     .total-row {
       font-size: 18px;
       font-weight: bold;
-      color: #e65100;
+      color: #e8590c;
       text-align: left;
       padding-top: 12px;
-      border-top: 2px solid #d4af37;
+      border-top: 2px solid #ff3b30;
     }
     .footer {
       text-align: center;
       font-size: 11px;
-      color: #8d6e63;
+      color: #8b8b9a;
       margin-top: 20px;
       padding-top: 12px;
-      border-top: 1px dashed #e0d5c0;
+      border-top: 1px dashed #ececf2;
     }
     .actions { max-width: 420px; margin: 20px auto 0; display: flex; gap: 10px; }
     .actions button, .actions a {
@@ -78,8 +80,8 @@
       text-align: center;
       text-decoration: none;
     }
-    .btn-print { background: #d4af37; color: #1a0f08; }
-    .btn-back { background: #eee; color: #5d4037; }
+    .btn-print { background: #ff3b30; color: #15151f; }
+    .btn-back { background: #eee; color: #3a3a4d; }
     @media print {
       body { background: #fff; padding: 0; }
       .actions { display: none !important; }

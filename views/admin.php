@@ -5,13 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title>لوحة المدير - <?= e(APP_NAME) ?></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f0e8; color: #212121; }
+    body { font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif; background: #f4f5fa; color: #212121; }
     .header {
-      background: linear-gradient(160deg, #1a0f08, #3e2723);
-      color: #d4af37;
+      background: linear-gradient(160deg, #15151f, #1f1f2c);
+      color: #ff3b30;
       padding: 16px 20px;
       display: flex;
       justify-content: space-between;
@@ -37,12 +39,12 @@
       color: #757575;
       border-bottom: 3px solid transparent;
     }
-    .tab.active { color: #d4af37; border-bottom-color: #d4af37; font-weight: bold; }
+    .tab.active { color: #ff3b30; border-bottom-color: #ff3b30; font-weight: bold; }
     .panel { padding: 16px; display: none; }
     .panel.active { display: block; }
     .card {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 14px;
       margin-bottom: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -53,13 +55,13 @@
     .form-row input, .form-row select {
       width: 100%;
       padding: 10px;
-      border: 1px solid #e0d5c0;
+      border: 1px solid #ececf2;
       border-radius: 8px;
       font-size: 14px;
     }
     button.primary {
-      background: #d4af37;
-      color: #1a0f08;
+      background: #ff3b30;
+      color: #15151f;
       border: none;
       padding: 10px 18px;
       border-radius: 8px;
@@ -73,14 +75,14 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px 0;
-      border-bottom: 1px solid #f0e6d3;
+      border-bottom: 1px solid #ececf2;
       font-size: 13px;
     }
-    .menu-row button { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid #d4af37; background: #fff; color: #5d4037; cursor: pointer; }
+    .menu-row button { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid #ff3b30; background: #fff; color: #3a3a4d; cursor: pointer; }
     .logout {
       background: transparent;
-      border: 1px solid #d4af37;
-      color: #d4af37;
+      border: 1px solid #ff3b30;
+      color: #ff3b30;
       padding: 5px 12px;
       border-radius: 8px;
       font-size: 12px;
@@ -89,12 +91,12 @@
     .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .stat-card {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 16px;
       text-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-    .stat-card .num { font-size: 24px; font-weight: bold; color: #d4af37; }
+    .stat-card .num { font-size: 24px; font-weight: bold; color: #ff3b30; }
     .stat-card .label { font-size: 12px; color: #757575; margin-top: 4px; }
   </style>
 <script src="?asset=api.js"></script>
@@ -103,10 +105,10 @@
   <div class="header">
     <div>
       <h1>⚙️ لوحة المدير</h1>
-      <div style="font-size:12px;color:#ffe082"><?= e($user['name']) ?></div>
+      <div style="font-size:12px;color:#ffb199"><?= e($user['name']) ?></div>
     </div>
     <div>
-      <a href="?page=cashier" style="color:#d4af37;font-size:12px;text-decoration:none;margin-left:10px">لوحة الكاشير</a>
+      <a href="?page=cashier" style="color:#ff3b30;font-size:12px;text-decoration:none;margin-left:10px">لوحة الكاشير</a>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -128,8 +130,8 @@
     <div class="card">
       <h3>روابط سريعة</h3>
       <p style="font-size:13px;margin-top:8px">
-        <a href="?page=cashier" style="color:#d4af37">← فتح لوحة الكاشير</a><br>
-        <a href="?page=menu" style="color:#d4af37">← فتح منيو العملاء</a>
+        <a href="?page=cashier" style="color:#ff3b30">← فتح لوحة الكاشير</a><br>
+        <a href="?page=menu" style="color:#ff3b30">← فتح منيو العملاء</a>
       </p>
     </div>
   </div>

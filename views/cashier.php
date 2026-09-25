@@ -5,18 +5,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title>الكاشير - <?= e(APP_NAME) ?></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: #f5f0e8;
+      font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+      background: #f4f5fa;
       color: #212121;
       padding-bottom: 20px;
     }
     .header {
-      background: linear-gradient(160deg, #1a0f08, #3e2723);
-      color: #d4af37;
+      background: linear-gradient(160deg, #15151f, #1f1f2c);
+      color: #ff3b30;
       padding: 16px 20px;
       display: flex;
       justify-content: space-between;
@@ -26,7 +28,7 @@
       z-index: 50;
     }
     .header h1 { font-size: 18px; }
-    .header .user { font-size: 12px; color: #ffe082; }
+    .header .user { font-size: 12px; color: #ffb199; }
     .filters {
       display: flex;
       gap: 8px;
@@ -44,29 +46,29 @@
       font-size: 13px;
       cursor: pointer;
     }
-    .filter-btn.active { background: #d4af37; color: #1a0f08; font-weight: bold; }
+    .filter-btn.active { background: #ff3b30; color: #15151f; font-weight: bold; }
     .orders { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
     .order-card {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 18px;
       padding: 14px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-      border-right: 4px solid #d4af37;
+      border-right: 4px solid #ff3b30;
     }
     .order-card.new { border-right-color: #e53935; }
     .order-card.preparing { border-right-color: #fb8c00; }
     .order-card.ready { border-right-color: #43a047; }
     .order-card.done { border-right-color: #1565c0; }
     .order-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .order-id { font-weight: bold; color: #3e2723; font-size: 14px; }
-    .order-status { font-size: 11px; padding: 3px 10px; border-radius: 12px; background: #eee; }
+    .order-id { font-weight: bold; color: #1f1f2c; font-size: 14px; }
+    .order-status { font-size: 11px; padding: 3px 10px; border-radius: 16px; background: #eee; }
     .order-status.new { background: #ffebee; color: #c62828; }
     .order-status.preparing { background: #fff3e0; color: #ef6c00; }
     .order-status.ready { background: #e8f5e9; color: #2e7d32; }
     .order-status.done { background: #e3f2fd; color: #1565c0; }
     .order-meta { font-size: 12px; color: #757575; margin-bottom: 8px; }
     .order-items { font-size: 13px; margin-bottom: 10px; line-height: 1.5; }
-    .order-total { font-weight: bold; color: #e65100; font-size: 15px; margin-bottom: 10px; }
+    .order-total { font-weight: bold; color: #e8590c; font-size: 15px; margin-bottom: 10px; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .actions button {
       padding: 7px 12px;
@@ -79,11 +81,11 @@
     .btn-prep { background: #fff3e0; color: #ef6c00; }
     .btn-ready { background: #e8f5e9; color: #2e7d32; }
     .btn-done { background: #e3f2fd; color: #1565c0; }
-    .empty { text-align: center; padding: 40px; color: #8d6e63; }
+    .empty { text-align: center; padding: 40px; color: #8b8b9a; }
     .logout {
       background: transparent;
-      border: 1px solid #d4af37;
-      color: #d4af37;
+      border: 1px solid #ff3b30;
+      color: #ff3b30;
       padding: 5px 12px;
       border-radius: 8px;
       font-size: 12px;
@@ -100,7 +102,7 @@
     </div>
     <div>
       <?php if ($user['role'] === 'admin'): ?>
-        <a href="?page=admin" style="color:#d4af37;font-size:12px;text-decoration:none;margin-left:10px">لوحة المدير</a>
+        <a href="?page=admin" style="color:#ff3b30;font-size:12px;text-decoration:none;margin-left:10px">لوحة المدير</a>
       <?php endif; ?>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
