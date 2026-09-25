@@ -105,7 +105,7 @@
 <script src="?asset=api.js"></script>
 </head>
 <body>
-  <a class="back-fab" href="?page=menu" title="رجوع للمنيو">
+  <a class="back-fab" href="?page=home" title="رجوع للرئيسية">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
   </a>
   <div class="card">
@@ -121,7 +121,7 @@
     <button class="submit" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
 
     <div class="guest">
-      أو <a href="?page=menu">تصفح المنيو كزائر</a>
+      أو <a href="?page=menu">تصفح المنيو كزائر</a> · <a href="?page=home">الرئيسية</a>
     </div>
   </div>
 

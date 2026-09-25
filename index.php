@@ -44,15 +44,15 @@ if (isset($_GET['api'])) {
 }
 
 // ===================== PAGES =====================
-$page = strtolower(trim((string)($_GET['page'] ?? 'login')));
+$page = strtolower(trim((string)($_GET['page'] ?? 'home')));
 $user = current_user();
 
-$publicPages   = ['login', 'menu', 'cart', 'invoice'];
+$publicPages   = ['home', 'login', 'menu', 'cart', 'invoice'];
 $staffPages    = ['cashier'];           // كاشير + مدير
 $adminPages    = ['admin'];             // مدير فقط
 
 if (!in_array($page, array_merge($publicPages, $staffPages, $adminPages), true)) {
-    $page = 'login';
+    $page = 'home';
 }
 if (in_array($page, $staffPages, true) && (!$user || !in_array($user['role'], ['cashier', 'admin'], true))) {
     http_response_code(403);

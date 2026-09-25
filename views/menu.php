@@ -14,7 +14,7 @@
       --bg:#f4f5fa; --surface:#ffffff; --text:#181822; --muted:#8b8b9a;
       --primary:#ff3b30; --primary-dark:#d32f2f; --accent2:#ff9500;
       --dark:#15151f; --dark2:#1f1f2c; --border:#ececf2;
-      --radius:18px;
+      --radius:14px;
     }
     body {
       font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
@@ -24,18 +24,18 @@
     }
     .topbar {
       background: linear-gradient(135deg, var(--dark), var(--dark2));
-      padding: 14px 16px;
+      padding: 12px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 6px;
       position: sticky;
       top: 0;
       z-index: 100;
       box-shadow: 0 4px 18px rgba(0,0,0,0.25);
     }
     .icon-btn {
-      width: 40px; height: 40px;
+      width: 36px; height: 36px;
       border-radius: 50%;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.14);
@@ -45,60 +45,63 @@
       flex-shrink: 0;
       position: relative;
     }
-    .icon-btn svg { width: 19px; height: 19px; }
+    .icon-btn svg { width: 17px; height: 17px; }
     .icon-btn .dot {
       position: absolute; top: -3px; left: -3px;
       background: var(--primary); color: #fff;
       font-size: 10px; font-weight: 800;
-      width: 17px; height: 17px; border-radius: 50%;
+      width: 16px; height: 16px; border-radius: 50%;
       display: none; align-items: center; justify-content: center;
       border: 2px solid var(--dark);
     }
     .brand { flex: 1; text-align: center; }
-    .brand-name { color: #fff; font-size: 17px; font-weight: 800; }
-    .brand-sub { color: var(--accent2); font-size: 10px; margin-top: 1px; }
+    .brand-name { color: #fff; font-size: 15px; font-weight: 800; }
+    .brand-sub { color: var(--accent2); font-size: 9.5px; margin-top: 1px; }
 
-    .search-wrap { padding: 14px 16px 6px; }
+    .search-wrap { padding: 12px 16px 4px; }
     .search-box {
       display: flex; align-items: center; gap: 8px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 11px 14px;
+      border-radius: 12px;
+      padding: 9px 12px;
       box-shadow: 0 2px 10px rgba(20,20,30,0.05);
     }
-    .search-box svg { width: 16px; height: 16px; color: var(--muted); flex-shrink:0; }
+    .search-box svg { width: 15px; height: 15px; color: var(--muted); flex-shrink:0; }
     .search-box input {
       border: none; outline: none; background: transparent;
-      font-family: inherit; font-size: 14px; width: 100%; color: var(--text);
+      font-family: inherit; font-size: 13.5px; width: 100%; color: var(--text);
     }
 
     .cats {
       display: flex;
-      gap: 14px;
-      padding: 14px 16px 6px;
+      gap: 12px;
+      padding: 12px 16px 2px;
       overflow-x: auto;
     }
     .cats::-webkit-scrollbar{ display:none; }
-    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 62px; }
+    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 52px; }
     .cat-circle {
-      width: 54px; height: 54px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-      margin: 0 auto 6px;
+      font-size: 20px;
+      margin: 0 auto 4px;
       border: 2px solid transparent;
       transition: transform .15s;
     }
-    .cat-item.active .cat-circle { border-color: #fff; transform: scale(1.08); }
-    .cat-label { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .cat-item.active .cat-circle { border-color: #fff; transform: scale(1.1); }
+    .cat-label { font-size: 9.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .cat-item.active .cat-label { color: var(--text); }
 
+    /* ===== كروت أصغر: 3 أعمدة على الشاشات الكبيرة ===== */
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
       padding: 10px 16px 16px;
     }
+    @media (min-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -108,55 +111,60 @@
       border: 1px solid var(--border);
       transition: transform .15s;
     }
-    .card:active { transform: scale(0.98); }
+    .card:active { transform: scale(0.97); }
     .thumb {
-      aspect-ratio: 1.15/1;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 46px;
+      aspect-ratio: 1.25/1;
       position: relative;
+      overflow: hidden;
+    }
+    .thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
     }
     .thumb .cat-chip {
-      position: absolute; top: 8px; right: 8px;
-      background: rgba(255,255,255,0.85);
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(21,21,31,0.75);
       backdrop-filter: blur(2px);
-      font-size: 9.5px; font-weight: 800; padding: 3px 8px;
-      border-radius: 20px; color: var(--dark);
+      font-size: 8.5px; font-weight: 800; padding: 3px 7px;
+      border-radius: 20px; color: #fff;
     }
-    .card .body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
-    .card h3 { font-size: 13.5px; font-weight: 800; line-height: 1.35; margin-bottom: 4px; min-height: 36px; }
-    .card .desc { font-size: 10.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.3; flex: 1; }
-    .card .price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-    .card .price { font-size: 15px; font-weight: 800; color: var(--text); }
-    .card .price small { font-size: 10px; font-weight: 700; color: var(--muted); }
+    .card .body { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; }
+    .card h3 { font-size: 12px; font-weight: 800; line-height: 1.35; margin-bottom: 3px; min-height: 32px; }
+    .card .price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; }
+    .card .price { font-size: 13.5px; font-weight: 800; color: var(--text); }
+    .card .price small { font-size: 9px; font-weight: 700; color: var(--muted); }
     .card .add-btn {
-      border: none; color: #fff; font-weight: 800; font-size: 11.5px;
-      padding: 8px 14px; border-radius: 10px; cursor: pointer;
+      border: none; color: #fff; font-weight: 800; font-size: 10.5px;
+      padding: 6px 11px; border-radius: 9px; cursor: pointer;
       display: flex; align-items: center; gap: 4px;
     }
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1 / -1; }
 
     .fab-cart {
-      position: fixed; bottom: 18px; left: 16px; right: 16px;
+      position: fixed; bottom: 16px; left: 16px; right: 16px;
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #fff; border: none; border-radius: 16px;
-      padding: 15px 18px;
-      font-family: inherit; font-weight: 800; font-size: 14px;
+      padding: 14px 18px;
+      font-family: inherit; font-weight: 800; font-size: 13.5px;
       display: flex; align-items: center; justify-content: space-between;
       box-shadow: 0 10px 30px -6px rgba(255,59,48,0.55);
       z-index: 90;
     }
     .fab-cart .count-badge {
       background: rgba(255,255,255,0.25);
-      width: 24px; height: 24px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 12px; margin-left: 8px;
+      font-size: 11px; margin-left: 8px;
     }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
   <div class="topbar">
+    <a class="icon-btn" href="?page=home" title="الرئيسية">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
     <a class="icon-btn" href="?page=login" title="دخول المستخدمين والأدمن">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     </a>
@@ -186,17 +194,28 @@
   </button>
 
   <script>
-    // ===== ألوان وأيقونات الفئات (تحدد تلقائيًا حسب اسم القسم) =====
-    const PALETTE = [
-      { bg: '#FF3B30', soft: '#FFEBE9' }, // أحمر
-      { bg: '#FF9500', soft: '#FFF3E0' }, // برتقالي
-      { bg: '#34C759', soft: '#E7F8EC' }, // أخضر
-      { bg: '#5AC8FA', soft: '#E7F6FE' }, // أزرق فاتح
-      { bg: '#AF52DE', soft: '#F5E9FB' }, // بنفسجي
-      { bg: '#FF2D55', soft: '#FFE7ED' }, // وردي
-      { bg: '#007AFF', soft: '#E5F0FF' }, // أزرق
+    // ===== صور حقيقية لكل تصنيف =====
+    const CAT_IMAGES = [
+      { keys: ['دجاج'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/a47e4af67_generated_image.png' },
+      { keys: ['لحم'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/84cd4359d_generated_image.png' },
+      { keys: ['مشوي','كباب','كفتة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/dee9595a9_generated_image.png' },
+      { keys: ['صيني','صواني','سفرة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/1bea8941c_generated_image.png' },
+      { keys: ['طاجن','طواجن'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/874539e25_generated_image.png' },
+      { keys: ['ساندوتش'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/bac04e273_generated_image.png' },
+      { keys: ['مطبخ','مكرونة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/bbec758ec_generated_image.png' },
     ];
-    const EMOJI_MAP = [
+    function imageFor(cat) {
+      const c = cat || '';
+      for (const m of CAT_IMAGES) if (m.keys.some(k => c.includes(k))) return m.img;
+      return 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/dee9595a9_generated_image.png';
+    }
+
+    // ===== ألوان الفئات =====
+    const PALETTE = [
+      { bg: '#FF3B30' }, { bg: '#FF9500' }, { bg: '#34C759' },
+      { bg: '#5AC8FA' }, { bg: '#AF52DE' }, { bg: '#FF2D55' }, { bg: '#007AFF' },
+    ];
+    const CAT_ICONS = [
       { keys: ['دجاج','فرخ'], icon: '🍗' },
       { keys: ['لحم'], icon: '🥩' },
       { keys: ['مشوي','كباب','كفتة'], icon: '🍢' },
@@ -213,13 +232,8 @@
     function colorFor(cat) { return PALETTE[hashStr(cat || '') % PALETTE.length]; }
     function emojiFor(cat) {
       const c = cat || '';
-      for (const m of EMOJI_MAP) if (m.keys.some(k => c.includes(k))) return m.icon;
+      for (const m of CAT_ICONS) if (m.keys.some(k => c.includes(k))) return m.icon;
       return '🍽️';
-    }
-    function hexToRgba(hex, a) {
-      const v = hex.replace('#','');
-      const r = parseInt(v.substr(0,2),16), g = parseInt(v.substr(2,2),16), b = parseInt(v.substr(4,2),16);
-      return `rgba(${r},${g},${b},${a})`;
     }
 
     let allItems = [];
@@ -293,12 +307,15 @@
         const color = colorFor(item.category);
         const card = document.createElement('div');
         card.className = 'card';
-        card.style.boxShadow = `0 10px 26px -8px ${hexToRgba(color.bg, 0.55)}`;
+        card.style.boxShadow = `0 8px 22px -8px ${color.bg}66`;
 
         const thumb = document.createElement('div');
         thumb.className = 'thumb';
-        thumb.style.background = `linear-gradient(150deg, ${hexToRgba(color.bg,0.16)}, ${hexToRgba(color.bg,0.32)})`;
-        thumb.textContent = emojiFor(item.category);
+        const img = document.createElement('img');
+        img.src = imageFor(item.category);
+        img.alt = item.name;
+        img.loading = 'lazy';
+        thumb.appendChild(img);
         const chip = document.createElement('span');
         chip.className = 'cat-chip';
         chip.textContent = item.category;
@@ -308,9 +325,6 @@
         body.className = 'body';
         const h3 = document.createElement('h3');
         h3.textContent = item.name;
-        const desc = document.createElement('div');
-        desc.className = 'desc';
-        desc.textContent = item.desc || item.category;
         const priceRow = document.createElement('div');
         priceRow.className = 'price-row';
         const price = document.createElement('div');
@@ -323,7 +337,7 @@
         btn.onclick = () => addToCart(item, btn);
         priceRow.append(price, btn);
 
-        body.append(h3, desc, priceRow);
+        body.append(h3, priceRow);
         card.append(thumb, body);
         list.appendChild(card);
       });
