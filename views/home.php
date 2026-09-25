@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <meta name="theme-color" content="#15151f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title><?= e(APP_NAME) ?></title>
@@ -332,6 +335,10 @@
       a.append(img, span);
       strip.appendChild(a);
     });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
   </script>
 </body>
 </html>

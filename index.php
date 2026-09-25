@@ -19,7 +19,7 @@ if (isset($_GET['api'])) {
     $data = json_input();
 
     // حماية CSRF لكل الطلبات المغيرة للبيانات (ما عدا الدخول)
-    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'report'], true)) {
+    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'report'], true)) {
         $hdr = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!hash_equals($_SESSION['csrf'], (string)$hdr)) {
             json_out(['success' => false, 'message' => 'انتهت الجلسة، أعد تحميل الصفحة']);
@@ -27,19 +27,22 @@ if (isset($_GET['api'])) {
     }
 
     switch ($action) {
-        case 'login':          api_login($data); break;
-        case 'logout':         api_logout(); break;
-        case 'current_user':   api_current_user(); break;
-        case 'menu':           api_menu(); break;
-        case 'place_order':    api_place_order($data); break;
-        case 'get_orders':     api_get_orders($data); break;
-        case 'update_status':  api_update_status($data); break;
-        case 'save_item':      api_save_item($data); break;
-        case 'toggle_item':    api_toggle_item($data); break;
-        case 'add_user':       api_add_user($data); break;
-        case 'report':         api_report($data); break;
-        case 'get_invoice':    api_get_invoice($data); break;
-        default:               json_out(['success' => false, 'message' => 'طلب غير معروف']);
+        case 'login':              api_login($data); break;
+        case 'logout':              api_logout(); break;
+        case 'current_user':        api_current_user(); break;
+        case 'menu':                api_menu(); break;
+        case 'place_order':         api_place_order($data); break;
+        case 'get_orders':          api_get_orders($data); break;
+        case 'update_status':       api_update_status($data); break;
+        case 'save_item':           api_save_item($data); break;
+        case 'toggle_item':         api_toggle_item($data); break;
+        case 'add_user':            api_add_user($data); break;
+        case 'list_users':          api_list_users(); break;
+        case 'update_permissions':  api_update_permissions($data); break;
+        case 'report':              api_report($data); break;
+        case 'dashboard':           api_dashboard(); break;
+        case 'get_invoice':         api_get_invoice($data); break;
+        default:                    json_out(['success' => false, 'message' => 'طلب غير معروف']);
     }
 }
 
@@ -47,20 +50,18 @@ if (isset($_GET['api'])) {
 $page = strtolower(trim((string)($_GET['page'] ?? 'home')));
 $user = current_user();
 
-$publicPages   = ['home', 'login', 'menu', 'cart', 'invoice'];
-$staffPages    = ['cashier'];           // كاشير + مدير
-$adminPages    = ['admin'];             // مدير فقط
+$publicPages     = ['home', 'login', 'menu', 'cart', 'invoice'];
+$protectedPages  = ['cashier', 'kitchen', 'admin'];
 
-if (!in_array($page, array_merge($publicPages, $staffPages, $adminPages), true)) {
+if (!in_array($page, array_merge($publicPages, $protectedPages), true)) {
     $page = 'home';
 }
-if (in_array($page, $staffPages, true) && (!$user || !in_array($user['role'], ['cashier', 'admin'], true))) {
-    http_response_code(403);
-    $page = 'denied';
-}
-if (in_array($page, $adminPages, true) && (!$user || $user['role'] !== 'admin')) {
-    http_response_code(403);
-    $page = 'denied';
+if (in_array($page, $protectedPages, true)) {
+    $allowed = $user ? user_allowed_pages($user) : [];
+    if (!in_array($page, $allowed, true)) {
+        http_response_code(403);
+        $page = 'denied';
+    }
 }
 
 $BASE = '?page=';

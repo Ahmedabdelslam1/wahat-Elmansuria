@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="<?= e($_SESSION['csrf']) ?>">
+  <meta name="theme-color" content="#15151f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <title>المنيو - <?= e(APP_NAME) ?></title>
@@ -14,7 +17,7 @@
       --bg:#f4f5fa; --surface:#ffffff; --text:#181822; --muted:#8b8b9a;
       --primary:#ff3b30; --primary-dark:#d32f2f; --accent2:#ff9500;
       --dark:#15151f; --dark2:#1f1f2c; --border:#ececf2;
-      --radius:14px;
+      --radius:12px;
     }
     body {
       font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
@@ -35,7 +38,7 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.25);
     }
     .icon-btn {
-      width: 36px; height: 36px;
+      width: 34px; height: 34px;
       border-radius: 50%;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.14);
@@ -45,63 +48,66 @@
       flex-shrink: 0;
       position: relative;
     }
-    .icon-btn svg { width: 17px; height: 17px; }
+    .icon-btn svg { width: 16px; height: 16px; }
     .icon-btn .dot {
       position: absolute; top: -3px; left: -3px;
       background: var(--primary); color: #fff;
-      font-size: 10px; font-weight: 800;
-      width: 16px; height: 16px; border-radius: 50%;
+      font-size: 9.5px; font-weight: 800;
+      width: 15px; height: 15px; border-radius: 50%;
       display: none; align-items: center; justify-content: center;
       border: 2px solid var(--dark);
     }
     .brand { flex: 1; text-align: center; }
-    .brand-name { color: #fff; font-size: 15px; font-weight: 800; }
-    .brand-sub { color: var(--accent2); font-size: 9.5px; margin-top: 1px; }
+    .brand-name { color: #fff; font-size: 14.5px; font-weight: 800; }
+    .brand-sub { color: var(--accent2); font-size: 9px; margin-top: 1px; }
 
-    .search-wrap { padding: 12px 16px 4px; }
+    .search-wrap { padding: 10px 14px 4px; }
     .search-box {
       display: flex; align-items: center; gap: 8px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 9px 12px;
+      padding: 8px 12px;
       box-shadow: 0 2px 10px rgba(20,20,30,0.05);
     }
-    .search-box svg { width: 15px; height: 15px; color: var(--muted); flex-shrink:0; }
+    .search-box svg { width: 14px; height: 14px; color: var(--muted); flex-shrink:0; }
     .search-box input {
       border: none; outline: none; background: transparent;
-      font-family: inherit; font-size: 13.5px; width: 100%; color: var(--text);
+      font-family: inherit; font-size: 13px; width: 100%; color: var(--text);
     }
 
     .cats {
       display: flex;
-      gap: 12px;
-      padding: 12px 16px 2px;
+      gap: 10px;
+      padding: 10px 14px 2px;
       overflow-x: auto;
     }
     .cats::-webkit-scrollbar{ display:none; }
-    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 52px; }
+    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 48px; }
     .cat-circle {
-      width: 44px; height: 44px; border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       margin: 0 auto 4px;
       border: 2px solid transparent;
       transition: transform .15s;
+      overflow: hidden;
     }
-    .cat-item.active .cat-circle { border-color: #fff; transform: scale(1.1); }
-    .cat-label { font-size: 9.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .cat-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .cat-item.active .cat-circle { border-color: var(--primary); transform: scale(1.1); box-shadow: 0 4px 14px -3px rgba(255,59,48,0.5); }
+    .cat-label { font-size: 9px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .cat-item.active .cat-label { color: var(--text); }
 
-    /* ===== كروت أصغر: 3 أعمدة على الشاشات الكبيرة ===== */
+    /* ===== كروت صغيرة مضيئة، 3 أعمدة على الموبايل ===== */
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      padding: 10px 16px 16px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px 12px 16px;
     }
-    @media (min-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (min-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 420px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 14px 16px; } }
+    @media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 900px) { .grid { grid-template-columns: repeat(5, 1fr); } }
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -111,9 +117,9 @@
       border: 1px solid var(--border);
       transition: transform .15s;
     }
-    .card:active { transform: scale(0.97); }
+    .card:active { transform: scale(0.96); }
     .thumb {
-      aspect-ratio: 1.25/1;
+      aspect-ratio: 1.1/1;
       position: relative;
       overflow: hidden;
     }
@@ -122,21 +128,22 @@
       object-fit: cover; display: block;
     }
     .thumb .cat-chip {
-      position: absolute; top: 6px; right: 6px;
-      background: rgba(21,21,31,0.75);
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(21,21,31,0.72);
       backdrop-filter: blur(2px);
-      font-size: 8.5px; font-weight: 800; padding: 3px 7px;
+      font-size: 7px; font-weight: 800; padding: 2px 5px;
       border-radius: 20px; color: #fff;
+      max-width: calc(100% - 8px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
-    .card .body { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; }
-    .card h3 { font-size: 12px; font-weight: 800; line-height: 1.35; margin-bottom: 3px; min-height: 32px; }
-    .card .price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; }
-    .card .price { font-size: 13.5px; font-weight: 800; color: var(--text); }
-    .card .price small { font-size: 9px; font-weight: 700; color: var(--muted); }
+    .card .body { padding: 6px 7px 8px; flex: 1; display: flex; flex-direction: column; }
+    .card h3 { font-size: 10.5px; font-weight: 800; line-height: 1.3; margin-bottom: 3px; min-height: 27px; }
+    .card .price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; }
+    .card .price { font-size: 11.5px; font-weight: 800; color: var(--text); }
+    .card .price small { font-size: 8px; font-weight: 700; color: var(--muted); }
     .card .add-btn {
-      border: none; color: #fff; font-weight: 800; font-size: 10.5px;
-      padding: 6px 11px; border-radius: 9px; cursor: pointer;
-      display: flex; align-items: center; gap: 4px;
+      border: none; color: #fff; font-weight: 800; font-size: 9.5px;
+      padding: 5px 8px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; gap: 3px;
     }
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1 / -1; }
@@ -194,35 +201,20 @@
   </button>
 
   <script>
-    // ===== صور حقيقية لكل تصنيف =====
-    const CAT_IMAGES = [
-      { keys: ['دجاج'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/a47e4af67_generated_image.png' },
-      { keys: ['لحم'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/84cd4359d_generated_image.png' },
-      { keys: ['مشوي','كباب','كفتة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/dee9595a9_generated_image.png' },
-      { keys: ['صيني','صواني','سفرة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/1bea8941c_generated_image.png' },
-      { keys: ['طاجن','طواجن'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/874539e25_generated_image.png' },
-      { keys: ['ساندوتش'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/bac04e273_generated_image.png' },
-      { keys: ['مطبخ','مكرونة'], img: 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/bbec758ec_generated_image.png' },
-    ];
-    function imageFor(cat) {
-      const c = cat || '';
-      for (const m of CAT_IMAGES) if (m.keys.some(k => c.includes(k))) return m.img;
-      return 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/dee9595a9_generated_image.png';
-    }
-
-    // ===== ألوان الفئات =====
+    // ===== ألوان الفئات (تُستخدم للتوهج والشرائط) =====
     const PALETTE = [
       { bg: '#FF3B30' }, { bg: '#FF9500' }, { bg: '#34C759' },
       { bg: '#5AC8FA' }, { bg: '#AF52DE' }, { bg: '#FF2D55' }, { bg: '#007AFF' },
     ];
     const CAT_ICONS = [
-      { keys: ['دجاج','فرخ'], icon: '🍗' },
-      { keys: ['لحم'], icon: '🥩' },
-      { keys: ['مشوي','كباب','كفتة'], icon: '🍢' },
-      { keys: ['طاجن','طواجن'], icon: '🍲' },
-      { keys: ['مطبخ','مكرونة'], icon: '🍝' },
+      { keys: ['دجاج','فرخ','برياني','كبسة','مندي'], icon: '🍗' },
+      { keys: ['لحم','جدي','ضاني'], icon: '🥩' },
+      { keys: ['مشوي','كباب','كفتة','طاووق','سيخ','ريش'], icon: '🍢' },
+      { keys: ['طاجن','طواجن','مطبخ','بامية','ملوخية'], icon: '🍲' },
+      { keys: ['مكرونة'], icon: '🍝' },
       { keys: ['ساندوتش'], icon: '🥙' },
-      { keys: ['صيني','صواني','سفرة'], icon: '🍛' },
+      { keys: ['صيني','صواني','سفرة','وليمة','مولد'], icon: '🍛' },
+      { keys: ['وجبات','ميكس','فردية'], icon: '🍽️' },
     ];
     function hashStr(s) {
       let h = 0;
@@ -235,8 +227,14 @@
       for (const m of CAT_ICONS) if (m.keys.some(k => c.includes(k))) return m.icon;
       return '🍽️';
     }
+    function hexToRgba(hex, a) {
+      const v = hex.replace('#','');
+      const r = parseInt(v.substr(0,2),16), g = parseInt(v.substr(2,2),16), b = parseInt(v.substr(4,2),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
 
     let allItems = [];
+    let catImages = {};
     let activeCat = 'all';
     let searchTerm = '';
     let cart = JSON.parse(localStorage.getItem('wahat_cart') || '[]');
@@ -258,6 +256,7 @@
         const res = await api('menu');
         if (!res.success) throw new Error(res.message || 'خطأ');
         allItems = res.items;
+        allItems.forEach(i => { if (!catImages[i.category]) catImages[i.category] = i.image; });
         renderCategories();
         renderItems();
         updateCartUI();
@@ -270,13 +269,20 @@
       const cats = [...new Set(allItems.map(i => i.category))];
       const container = document.getElementById('categories');
       container.innerHTML = '';
-      const mk = (label, key, emoji, color) => {
+      const mk = (label, key, img) => {
         const wrap = document.createElement('div');
         wrap.className = 'cat-item' + (key === activeCat ? ' active' : '');
         const circle = document.createElement('div');
         circle.className = 'cat-circle';
-        circle.style.background = key === 'all' ? 'linear-gradient(135deg,#15151f,#3a3a4d)' : color.bg;
-        circle.textContent = emoji;
+        if (key === 'all') {
+          circle.style.background = 'linear-gradient(135deg,#15151f,#3a3a4d)';
+          circle.style.color = '#fff';
+          circle.textContent = '🌟';
+        } else {
+          const im = document.createElement('img');
+          im.src = img; im.alt = label; im.loading = 'lazy';
+          circle.appendChild(im);
+        }
         const label_ = document.createElement('div');
         label_.className = 'cat-label';
         label_.textContent = label;
@@ -284,8 +290,8 @@
         wrap.onclick = () => { activeCat = key; renderCategories(); renderItems(); };
         container.appendChild(wrap);
       };
-      mk('الكل', 'all', '🌟', null);
-      cats.forEach(c => mk(c, c, emojiFor(c), colorFor(c)));
+      mk('الكل', 'all', null);
+      cats.forEach(c => mk(c, c, catImages[c]));
     }
 
     function onSearch() {
@@ -307,18 +313,18 @@
         const color = colorFor(item.category);
         const card = document.createElement('div');
         card.className = 'card';
-        card.style.boxShadow = `0 8px 22px -8px ${color.bg}66`;
+        card.style.boxShadow = `0 6px 16px -6px ${hexToRgba(color.bg, 0.5)}`;
 
         const thumb = document.createElement('div');
         thumb.className = 'thumb';
         const img = document.createElement('img');
-        img.src = imageFor(item.category);
+        img.src = item.image;
         img.alt = item.name;
         img.loading = 'lazy';
         thumb.appendChild(img);
         const chip = document.createElement('span');
         chip.className = 'cat-chip';
-        chip.textContent = item.category;
+        chip.textContent = emojiFor(item.category);
         thumb.appendChild(chip);
 
         const body = document.createElement('div');
@@ -333,7 +339,7 @@
         const btn = document.createElement('button');
         btn.className = 'add-btn';
         btn.style.background = color.bg;
-        btn.textContent = '+ أضف';
+        btn.textContent = '+';
         btn.onclick = () => addToCart(item, btn);
         priceRow.append(price, btn);
 
@@ -350,11 +356,15 @@
       localStorage.setItem('wahat_cart', JSON.stringify(cart));
       updateCartUI();
       const old = btn.textContent;
-      btn.textContent = '✓ تمت';
+      btn.textContent = '✓';
       setTimeout(() => btn.textContent = old, 700);
     }
 
     loadMenu();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
   </script>
 </body>
 </html>
