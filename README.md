@@ -95,3 +95,21 @@ echo 'تم';
 - لو هتنشر على HTTPS (وهذا الأفضل)، فعّل سطر `'secure' => true` في `boot_session()` داخل `lib.php`
 
 تم التطوير لـ واحة المنصورية
+
+## 🌐 التشغيل على استضافة مجانية (InfinityFree)
+
+النظام يدعم MySQL و SQLite معًا (ملف `config.php`):
+
+1. سجّل حسابًا على https://infinityfree.com واختر دومين فرعي مجاني باسم مطعمك، مثل: `wahat-elmansuria` — رابط موقعك سيصبح `wahat-elmansuria.infinityfreeapp.com`
+2. من لوحة التحكم (VistaPanel) => **MySQL Databases** => أنشئ قاعدة وستظهر لك بيانات الاتصال (Host / Database Name / Username / Password) — **احفظها**
+3. من **Online File Manager** ارفع ملف `Wahat_Restaurant_MySQL.zip` داخل `htdocs` ثم اضغط عليه بالزر الأيمن => Extract
+4. حرّر ملف `config.php` (بالزر الأيمن => Edit):
+   - غيّر `DB_DRIVER` إلى `'mysql'`
+   - املأ `DB_HOST` و`DB_NAME` و`DB_USER` و`DB_PASS` ببياناتك المحفوظة من الخطوة 2
+5. افتح رابط موقعك — الجداول والبيانات الأولية تُنشأ تلقائيًا
+6. سجّل الدخول بـ admin / admin123 **وغيّر كلمة المرور فورًا**
+
+> ملاحظة: بيانات قاعدة MySQL في InfinityFree تكون شكلها:
+> - Host: `sqlXXX.infinityfree.com`
+> - Database Name: `if0_XXXXXXX_wahat`
+> - Username: `if0_XXXXXXX`
