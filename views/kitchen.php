@@ -127,6 +127,11 @@
     <div class="stat-chip"><b id="stDoneToday" style="color:#5ab0ff">0</b><span>تم تسليمه اليوم</span></div>
   </div>
 
+  <div class="co-section" id="coSection" style="border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface)">
+    <h3>🏢 طلبات الشركات اليوم <span class="count" id="coCount">0</span></h3>
+    <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
+  </div>
+
   <div class="board">
     <div class="col new">
       <div class="col-head"><span>🔴 جديد</span><span class="count" id="cNew">0</span></div>
@@ -140,11 +145,6 @@
       <div class="col-head"><span>🟢 جاهز للتسليم</span><span class="count" id="cReady">0</span></div>
       <div id="listReady"></div>
     </div>
-  </div>
-
-  <div class="co-section" id="coSection" style="border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface)">
-    <h3>🏢 طلبات الشركات اليوم <span class="count" id="coCount">0</span></h3>
-    <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
   </div>
 
   <script>
@@ -277,7 +277,10 @@
             <div class="co-cname">🏢 ${esc(g.company)}</div>
             ${g.orders.map(o => {
               const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
-              return `<div class="co-line"><span>${esc(label)}</span><span class="co-meals">× ${o.meals} وجبة</span></div>`;
+              return `<div class="co-line" style="flex-direction:column;align-items:stretch;gap:2px">
+                <div style="display:flex;justify-content:space-between"><span>${esc(label)}</span><span class="co-meals">× ${o.meals} وجبة</span></div>
+                ${o.notes ? `<div style="font-size:11.5px;color:#ef6c00;font-weight:700">📝 ${esc(o.notes)}</div>` : ''}
+              </div>`;
             }).join('')}
             <div class="co-sum"><span>الإجمالي</span><span>${g.totalMeals} وجبة</span></div>
           </div>

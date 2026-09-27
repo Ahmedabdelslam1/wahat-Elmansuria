@@ -75,6 +75,7 @@
     <label>ملاحظات</label>
     <textarea id="oeNotes" rows="2" placeholder="ملاحظات (اختياري)"></textarea>
     <label>أصناف الطلب</label>
+    <div id="oeItemsHint" style="display:none;font-size:11.5px;color:#34c759;font-weight:700;margin-bottom:6px">🏢 طلب شركات: التعديل هنا بالإضافة فقط (بند أو صنف آخر) — الإلغاء والحذف من شاشة الشركات</div>
     <div class="oe-items" id="oeItems"></div>
     <div class="oe-total-row"><span>الإجمالي الجديد</span><span id="oeTotal">0 ج.م</span></div>
     <label style="margin-top:10px">➕ إضافة صنف للطلب</label>
@@ -139,16 +140,19 @@
 
   function oeRenderItems() {
     var box = document.getElementById('oeItems');
+    var addOnly = oeType === 'شركات'; // طلبات الشركات: إضافة بند/صنف آخر فقط — الحذف والإلغاء من شاشة الشركات
+    var hint = document.getElementById('oeItemsHint');
+    if (hint) hint.style.display = addOnly ? 'block' : 'none';
     if (!oeCart.length) { box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد أصناف</div>'; }
     else {
       box.innerHTML = oeCart.map(function (c, idx) {
         return '<div class="oe-item-row"><span>' + esc(c.name) + '</span>'
           + '<span class="oe-qty">'
-          + '<button onclick="oeChangeQty(' + idx + ', -1)">−</button>'
+          + (addOnly ? '' : '<button onclick="oeChangeQty(' + idx + ', -1)">−</button>')
           + '<b>' + c.qty + '</b>'
           + '<button onclick="oeChangeQty(' + idx + ', 1)">+</button>'
           + '<span style="min-width:46px;text-align:left;font-weight:700">' + (c.qty * c.price) + '</span>'
-          + '<button onclick="oeRemoveItem(' + idx + ')" title="حذف" style="background:#ffebe9;color:#ff3b30">✕</button>'
+          + (addOnly ? '' : '<button onclick="oeRemoveItem(' + idx + ')" title="حذف" style="background:#ffebe9;color:#ff3b30">✕</button>')
           + '</span></div>';
       }).join('');
     }
@@ -158,6 +162,7 @@
   }
 
   window.oeChangeQty = function (idx, delta) {
+    if (oeType === 'شركات' && delta < 0) return; // الشركات: إضافة فقط
     oeCart[idx].qty += delta;
     if (oeCart[idx].qty <= 0) oeCart.splice(idx, 1);
     oeRenderItems();
@@ -222,6 +227,7 @@
   };
 
   window.oeCancelOrder = async function () {
+    if (oeType === 'شركات') { alert('طلبات الشركات: الإلغاء يكون من شاشة الشركات (لكل بند) وليس من هنا'); return; }
     if (!confirm('إلغاء الطلب ' + oeOrderId + '؟ (لن يُحسب في المبيعات)')) return;
     try {
       var res = await api('cancel_order', { orderId: oeOrderId });
