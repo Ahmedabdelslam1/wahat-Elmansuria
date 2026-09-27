@@ -467,7 +467,7 @@
       window.location.href = '?page=login';
     }
 
-    loadMenu();
+    loadMenu().then(renderPosGrid);
     loadOrders('all');
     setInterval(() => loadOrders(currentFilter), 12000);
   </script>
