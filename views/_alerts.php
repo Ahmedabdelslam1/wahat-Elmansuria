@@ -30,11 +30,21 @@ $_waNum = preg_replace('/\D/', '', get_setting('ordersWhatsapp', '') ?: get_sett
     } catch (e) {}
   }
 
-  // تسليح تلقائي: المتصفح يسمح بالصوت بعد أول لمسة/ضغطة على الصفحة
+  // تسليح تلقائي قوي: المتصفح يسمح بالصوت بعد أول تفاعل مع الصفحة
+  // نحاول في كل تفاعل (وليس مرة واحدة) + عند العودة للتبويب + عند ظهور الصفحة
   __tryInitCtx();
-  ['pointerdown', 'touchstart', 'keydown'].forEach(function (evt) {
-    document.addEventListener(evt, function () { __tryInitCtx(); }, { once: true, passive: true });
+  var __lastArmTry = 0;
+  function __armTick() {
+    var now = Date.now();
+    if (now - __lastArmTry < 1500) return;
+    __lastArmTry = now;
+    __tryInitCtx();
+  }
+  ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach(function (evt) {
+    document.addEventListener(evt, __armTick, { passive: true });
   });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) __armTick(); });
+  window.addEventListener('focus', __armTick);
 
   function __updateSoundBtn(label) {
     var b = document.getElementById('soundBtn');
@@ -52,14 +62,21 @@ $_waNum = preg_replace('/\D/', '', get_setting('ordersWhatsapp', '') ?: get_sett
     localStorage.setItem('wahat_siren', __siren.enabled ? 'on' : 'off');
     __tryInitCtx();
     __updateSoundBtn();
+    // عند التشغيل: صفارة اختبار قصيرة للتأكد أن الصوت يعمل فعلًا
+    if (__siren.enabled) __sirenAlert('🔔 اختبار الإنذار — يعمل بنجاح', true);
   };
   window.__sirenToggleBtn = function () { __sirenToggle(); };
 
   // إنذار مرتفع: نغمتان متبادلتان × 10 دورات + اهتزاز + لافتة حمراء وميض
-  window.__sirenAlert = function (text) {
-    try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400, 150, 400]); } catch (e) {}
+  window.__sirenAlert = function (text, isTest) {
+    try { if (navigator.vibrate) navigator.vibrate(isTest ? [200] : [400, 150, 400, 150, 400, 150, 400]); } catch (e) {}
     __showAlertBanner(text || '🔔 طلب جديد!');
-    if (!__siren.enabled || !__siren.ctx || __siren.ctx.state !== 'running') return;
+    if (!__siren.enabled || !__siren.ctx || __siren.ctx.state !== 'running') {
+      __siren.blocked = true; // الصوت محجوب (لم يتفاعل أحد مع الصفحة بعد) — أول لمسة ستشغّله
+      return;
+    }
+    __siren.blocked = false;
+    if (isTest) return; // الاختبار: لايفة فقط بلا صفارة كاملة
     var ctx = __siren.ctx;
     var now = ctx.currentTime;
     var master = ctx.createGain();
@@ -113,9 +130,22 @@ $_waNum = preg_replace('/\D/', '', get_setting('ordersWhatsapp', '') ?: get_sett
       b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;text-align:center;font-weight:800;font-size:15px;padding:14px;color:#fff;background:linear-gradient(90deg,#c62828,#ff5252,#c62828);cursor:pointer;box-shadow:0 6px 22px rgba(255,0,0,.55);font-family:inherit';
       document.body.appendChild(b);
     }
-    b.textContent = text + ' — اضغط للإخفاء';
+    b.textContent = text + (__siren.blocked && !String(text).includes('اختبار') ? ' — 🔇 اضغط هنا لتشغيل الصوت' : ' — اضغط للإخفاء');
     b.style.display = 'block';
-    b.onclick = function () { b.style.display = 'none'; clearInterval(__siren.flashing); };
+    b.onclick = function () {
+      b.style.display = 'none';
+      clearInterval(__siren.flashing);
+      // لو ضغط الإنذار كان محجوبًا: سلّح الصوت وشغّل الصفارة الآن للتأكيد
+      if (__siren.blocked) {
+        __tryInitCtx();
+        setTimeout(function () {
+          if (__siren.ctx && __siren.ctx.state === 'running') {
+            __siren.blocked = false;
+            __sirenAlert('🔔 تم تفعيل الصوت — الإنذار جاهز الآن', true);
+          }
+        }, 150);
+      }
+    };
     clearInterval(__siren.flashing);
     var on = true;
     __siren.flashing = setInterval(function () {
@@ -128,8 +158,18 @@ $_waNum = preg_replace('/\D/', '', get_setting('ordersWhatsapp', '') ?: get_sett
   }
 
   // ================= واتساب بدون توكن (wa.me — نقرة واحدة) =================
+  // توحيد الأرقام المصرية: +2010.. / 002010.. / 010.. / 10.. → 2010..
+  window.waDigits = function (phone) {
+    var d = String(phone || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.indexOf('00') === 0) d = d.slice(2);
+    if (d.length === 10 && d[0] === '1') d = '2' + d;
+    if (d.length === 11 && d[0] === '0') d = '2' + d;
+    return d;
+  };
   window.waLink = function (phone, text) {
-    var digits = String(phone || '').replace(/\D/g, '');
+    var digits = waDigits(phone);
+    if (!digits) return '';
     return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
   };
 

@@ -142,7 +142,7 @@
     </div>
   </div>
 
-  <div class="co-section">
+  <div class="co-section" id="coSection" style="border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface)">
     <h3>🏢 طلبات الشركات اليوم <span class="count" id="coCount">0</span></h3>
     <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
   </div>
@@ -246,6 +246,9 @@
     tickClock();
     setInterval(tickClock, 1000);
 
+    let knownCoIds = new Set();
+    let coFirstLoad = true;
+
     async function loadCompanyOrders() {
       try {
         const res = await api('company_today');
@@ -254,6 +257,16 @@
         const active = res.groups
           .map(g => ({ ...g, orders: g.orders.filter(o => o.status !== 'ملغي') }))
           .filter(g => g.orders.length);
+        // إنذار عند وصول طلب شركات جديد
+        const ids = new Set();
+        (res.groups || []).forEach(g => g.orders.forEach(o => ids.add(o.id)));
+        if (!coFirstLoad && knownCoIds.size > 0) {
+          let hasNewCo = false;
+          ids.forEach(id => { if (!knownCoIds.has(id)) hasNewCo = true; });
+          if (hasNewCo && window.__sirenAlert) __sirenAlert('🚨 طلب شركات جديد!');
+        }
+        knownCoIds = ids;
+        coFirstLoad = false;
         document.getElementById('coCount').textContent = active.length;
         if (!active.length) {
           box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div>';

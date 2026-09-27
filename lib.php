@@ -766,7 +766,10 @@ function api_cancel_order($data) {
     $stmt = $db->prepare("UPDATE orders SET status = 'ملغي' WHERE order_id = ?");
     $stmt->execute([$orderId]);
     if ((int)$stmt->rowCount()) {
-        log_activity('إلغاء طلب', 'طلب', $orderId, 'تم إلغاء الطلب');
+        // مزامنة: إلغاء بنود الشركة المرتبطة بهذا الطلب حتى لا تُحسب في الشاشات والتقارير
+        $co = $db->prepare("UPDATE company_orders SET status = 'ملغي' WHERE order_id = ?");
+        $co->execute([$orderId]);
+        log_activity('إلغاء طلب', 'طلب', $orderId, 'تم إلغاء الطلب وبنود الشركات المرتبطة');
         json_out(['success' => true, 'message' => 'تم إلغاء الطلب']);
     }
     json_out(['success' => false, 'message' => 'الطلب غير موجود']);
@@ -1382,9 +1385,19 @@ function whatsapp_order_message($orderId, $customerName, $items, $total, $status
            "شكرًا لطلبك من " . APP_NAME . " 🌴";
 }
 
+/** توحيد الأرقام المصرية لأي صيغة: +2010.. / 002010.. / 010.. / 10.. → 2010.. */
+function normalize_wa_phone($phone) {
+    $d = preg_replace('/\D/', '', (string)$phone);
+    if ($d === '') return '';
+    if (strpos($d, '00') === 0) $d = substr($d, 2);            // 002012.. → 2012..
+    if (strlen($d) === 10 && $d[0] === '1') $d = '2' . $d;      // 1001234567 → 21001234567
+    if (strlen($d) === 11 && $d[0] === '0') $d = '2' . $d;      // 01001234567 → 201001234567
+    return $d;
+}
+
 /** رابط wa.me جاهز بالإرسال بنقرة واحدة (بدون توكن) */
 function wa_me_link($phone, $text) {
-    $digits = preg_replace('/\D/', '', (string)$phone);
+    $digits = normalize_wa_phone($phone);
     if ($digits === '') return '';
     return 'https://wa.me/' . $digits . '?text=' . rawurlencode($text);
 }
