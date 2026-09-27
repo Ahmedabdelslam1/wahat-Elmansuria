@@ -139,6 +139,40 @@
     .type-toggle button.active.dinein { background:#e5f0ff; border-color:#007aff; color:#007aff; }
     .type-toggle button.active.delivery { background:#fff3e0; border-color:#ff9500; color:#ff9500; }
     .pos-submit-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+
+    /* ===== طلبات الشركات ===== */
+    .co-form { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:12px; }
+    .co-form .co-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .co-form input, .co-form select {
+      width:100%; padding:10px 11px; border:1px solid var(--border); border-radius:10px;
+      font-family:inherit; font-size:12.5px; background:var(--bg);
+    }
+    .co-form input.wide { grid-column:1 / -1; }
+    .co-form select { font-weight:800; }
+    .co-live-total {
+      grid-column:1 / -1; background:#fff3e0; border:1px dashed #ff9500; border-radius:10px;
+      padding:8px 12px; font-size:12.5px; font-weight:800; color:#ef6c00;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .co-submit {
+      grid-column:1 / -1; background:linear-gradient(90deg,#ef6c00,#e65100); color:#fff;
+      border:none; padding:13px; border-radius:12px; font-weight:800; font-size:13.5px;
+      cursor:pointer; font-family:inherit;
+    }
+    .co-submit:disabled { opacity:.5; cursor:wait; }
+    .co-grand {
+      display:flex; justify-content:space-between; background:var(--dark); color:#fff;
+      border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:12.5px; font-weight:800;
+    }
+    .co-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:8px; overflow:hidden; }
+    .co-head { display:flex; justify-content:space-between; align-items:center; padding:11px 12px; cursor:pointer; gap:8px; flex-wrap:wrap; }
+    .co-head .cname { font-weight:800; font-size:13.5px; color:var(--primary); text-decoration:underline; }
+    .co-head .ctotal { font-weight:800; font-size:13px; }
+    .co-body { display:none; border-top:1px dashed var(--border); padding:8px 12px; font-size:12px; }
+    .co-body.show { display:block; }
+    .co-row { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed var(--border); flex-wrap:wrap; }
+    .co-row:last-child { border-bottom:none; }
+    .co-row .muted { color:var(--muted); font-size:11px; }
     .pos-total { font-size:16px; font-weight:800; color:var(--primary); }
     .pos-submit { flex:1; background:linear-gradient(90deg,var(--primary),var(--primary-dark)); color:#fff; border:none; padding:13px; border-radius:12px; font-weight:800; font-size:13.5px; cursor:pointer; font-family:inherit; }
     .pos-submit:disabled { opacity:.5; }
@@ -171,6 +205,7 @@
     <button class="tab active" onclick="showTab('pos', this)">🧾 طلب جديد</button>
     <button class="tab" onclick="showTab('orders', this)">📋 الطلبات</button>
     <button class="tab" onclick="showTab('menu', this)">🍽️ المنيو</button>
+    <button class="tab" onclick="showTab('companies', this)">🏢 شركات</button>
   </div>
 
   <!-- POS: طلب جديد -->
@@ -221,6 +256,31 @@
     <div class="menu-grid" id="menuGrid"></div>
   </div>
 
+  <!-- طلبات الشركات: وجبات جافة ×50 / ×100 -->
+  <div class="panel" id="panel-companies">
+    <div class="co-form">
+      <div class="co-grid">
+        <input class="wide" id="coCompany" placeholder="🏢 اسم الشركة" list="coCompaniesList">
+        <input class="wide" id="coDepartment" placeholder="🏬 القسم / الموقع (اختياري)">
+        <select id="coPackage" onchange="coUpdateTotal()">
+          <option value="جافة ×50">وجبة جافة ×50</option>
+          <option value="جافة ×100">وجبة جافة ×100</option>
+        </select>
+        <input id="coMeals" type="number" min="1" placeholder="عدد الوجبات" oninput="coUpdateTotal()">
+        <input id="coPrice" type="number" min="0" step="0.5" placeholder="قيمة الوجبة (ج.م)" oninput="coUpdateTotal()">
+        <input id="coNotes" placeholder="ملاحظات (اختياري)">
+        <div class="co-live-total"><span>إجمالي طلب الشركة</span><span id="coLiveTotal">0 ج.م</span></div>
+        <button class="co-submit" id="coSubmitBtn" onclick="submitCompanyOrder()">🏢 تسجيل طلب الشركة</button>
+      </div>
+      <datalist id="coCompaniesList"></datalist>
+    </div>
+    <div class="co-grand" id="coGrand" style="display:none">
+      <span>إجمالي شركات اليوم: <span id="coGrandMeals">0</span> وجبة</span>
+      <span id="coGrandTotal">0 ج.م</span>
+    </div>
+    <div id="coGroupsList"></div>
+  </div>
+
   <script>
     let currentFilter = 'all';
     let cashierMenu = [];
@@ -237,33 +297,68 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // ===== تنبيه صوتي (صفارة) عند طلب جديد =====
+    // ===== تنبيه صوتي: إنذار صفارة عالي يعمل تلقائيًا عند أي طلب جديد =====
+    function markSoundReady(label) {
+      soundEnabled = true;
+      const btn = document.getElementById('soundBtn');
+      if (btn) { btn.textContent = label || '🚨 الإنذار مُسلّط تلقائيًا'; btn.classList.add('on'); }
+    }
     function enableSound() {
       try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        soundEnabled = true;
-        const btn = document.getElementById('soundBtn');
-        btn.textContent = '🔔 التنبيه مُفعّل';
-        btn.classList.add('on');
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        markSoundReady();
       } catch (e) {}
     }
-    function playSiren() {
-      if (!soundEnabled || !audioCtx) return;
-      const now = audioCtx.currentTime;
-      for (let i = 0; i < 3; i++) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        const t0 = now + i * 0.6;
-        osc.frequency.setValueAtTime(600, t0);
-        osc.frequency.linearRampToValueAtTime(1000, t0 + 0.3);
-        osc.frequency.linearRampToValueAtTime(600, t0 + 0.6);
-        gain.gain.setValueAtTime(0.001, t0);
-        gain.gain.linearRampToValueAtTime(0.25, t0 + 0.05);
-        gain.gain.linearRampToValueAtTime(0.001, t0 + 0.58);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(t0); osc.stop(t0 + 0.6);
+    // تسليح تلقائي: المتصفح يسمح بالصوت بعد أول لمسة/ضغطة على الصفحة
+    (function autoArm() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'running') { markSoundReady('🚨 الإنذار مُسلّط تلقائيًا'); return; }
+        const arm = () => {
+          if (!audioCtx) return;
+          audioCtx.resume().then(() => markSoundReady()).catch(() => {});
+        };
+        ['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
+          document.addEventListener(evt, arm, { once: true, passive: true }));
+      } catch (e) {
+        // متصفح قديم: يظل الزر اليدوي متاحًا
       }
+    })();
+
+    let sirenPlaying = false;
+    function playSiren() {
+      if (!soundEnabled || !audioCtx || audioCtx.state !== 'running' || sirenPlaying) return;
+      sirenPlaying = true;
+      if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {} }
+      const now = audioCtx.currentTime;
+      // إنذار مرتفع: نغمتان متبادلتان (شرطة طويلة + نقرة) × 4 دورات
+      const master = audioCtx.createGain();
+      master.gain.value = 0.55;
+      master.connect(audioCtx.destination);
+      const cycle = 0.75;
+      for (let i = 0; i < 8; i++) {
+        const t0 = now + i * cycle * 0.5;
+        const hi = i % 2 === 0;
+        const freq = hi ? 980 : 720;
+        const osc = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc2.type = 'sawtooth';
+        osc.frequency.value = freq;
+        osc2.frequency.value = freq * 0.5;
+        const dur = cycle * 0.5;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.85, t0 + 0.02);
+        gain.gain.setValueAtTime(0.85, t0 + dur - 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain); osc2.connect(gain);
+        gain.connect(master);
+        osc.start(t0); osc.stop(t0 + dur + 0.02);
+        osc2.start(t0); osc2.stop(t0 + dur + 0.02);
+      }
+      setTimeout(() => { sirenPlaying = false; }, 3200);
     }
 
     function showTab(id, btn) {
@@ -274,6 +369,7 @@
       if (id === 'menu' && cashierMenu.length === 0) loadMenu();
       if (id === 'pos' && cashierMenu.length === 0) loadMenu().then(renderPosGrid);
       else if (id === 'pos') renderPosGrid();
+      if (id === 'companies') loadCompaniesToday();
     }
 
     async function loadMenu() {
@@ -436,6 +532,83 @@
       document.getElementById('tdNew').textContent = orders.filter(o => o.status === 'جديد').length;
       document.getElementById('tdReady').textContent = orders.filter(o => o.status === 'جاهز').length;
     }
+    // ===== طلبات الشركات =====
+    function coUpdateTotal() {
+      const meals = parseInt(document.getElementById('coMeals').value) || 0;
+      const price = parseFloat(document.getElementById('coPrice').value) || 0;
+      document.getElementById('coLiveTotal').textContent = (meals * price) + ' ج.م';
+    }
+
+    async function submitCompanyOrder() {
+      const companyName = document.getElementById('coCompany').value.trim();
+      const department = document.getElementById('coDepartment').value.trim();
+      const packageType = document.getElementById('coPackage').value;
+      const meals = parseInt(document.getElementById('coMeals').value) || 0;
+      const price = parseFloat(document.getElementById('coPrice').value) || 0;
+      const notes = document.getElementById('coNotes').value.trim();
+      if (!companyName) { alert('أدخل اسم الشركة'); return; }
+      if (meals <= 0) { alert('أدخل عدد الوجبات'); return; }
+      if (price <= 0) { alert('أدخل قيمة الوجبة'); return; }
+      const btn = document.getElementById('coSubmitBtn');
+      btn.disabled = true;
+      try {
+        const res = await api('add_company_order', { companyName, department, package: packageType, meals, price, notes });
+        btn.disabled = false;
+        if (res.success) {
+          ['coDepartment', 'coMeals', 'coPrice', 'coNotes'].forEach(id => document.getElementById(id).value = '');
+          coUpdateTotal();
+          loadCompaniesToday();
+        } else alert(res.message || 'خطأ');
+      } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
+    }
+
+    async function loadCompaniesToday() {
+      try {
+        const res = await api('company_today');
+        if (!res.success) {
+          document.getElementById('coGroupsList').innerHTML = '<div class="empty">' + esc(res.message || 'خطأ') + '</div>';
+          return;
+        }
+        renderCompanyGroups(res.groups, res.grandTotal, res.grandMeals);
+      } catch (e) {
+        document.getElementById('coGroupsList').innerHTML = '<div class="empty">خطأ في الاتصال بالسيرفر</div>';
+      }
+    }
+
+    function renderCompanyGroups(groups, grandTotal, grandMeals) {
+      const grand = document.getElementById('coGrand');
+      if (!groups.length) {
+        grand.style.display = 'none';
+        document.getElementById('coGroupsList').innerHTML = '<div class="empty">لا توجد طلبات شركات اليوم بعد</div>';
+        return;
+      }
+      grand.style.display = 'flex';
+      document.getElementById('coGrandMeals').textContent = grandMeals;
+      document.getElementById('coGrandTotal').textContent = Math.round(grandTotal) + ' ج.م';
+
+      document.getElementById('coGroupsList').innerHTML = groups.map((g, gi) => `
+        <div class="co-card">
+          <div class="co-head" onclick="toggleCoBody(${gi}, event)">
+            <span class="cname">${esc(g.company)}</span>
+            <span class="ctotal">${g.totalMeals} وجبة · ${Math.round(g.total)} ج.م ▾</span>
+          </div>
+          <div class="co-body" id="coBody-${gi}">
+            ${g.orders.map(o => `
+              <div class="co-row">
+                <span><b>${esc(o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة</span>
+                <span><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.created_at)}${o.department ? ' · ' + esc(o.department) : ''}</span></span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleCoBody(gi, ev) {
+      ev.stopPropagation();
+      document.getElementById('coBody-' + gi).classList.toggle('show');
+    }
+
     async function loadTodaySummary() { loadOrders(currentFilter); }
 
     function statusClass(status) {

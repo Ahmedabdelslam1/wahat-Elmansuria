@@ -113,6 +113,21 @@ function init_db(PDO $db) {
                 `key` VARCHAR(100) PRIMARY KEY,
                 `value` VARCHAR(1000) DEFAULT ''
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            CREATE TABLE IF NOT EXISTS company_orders (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                company_name VARCHAR(200) NOT NULL,
+                department VARCHAR(200) DEFAULT '',
+                package VARCHAR(50) NOT NULL,
+                meals INT NOT NULL DEFAULT 0,
+                price DECIMAL(10,2) NOT NULL DEFAULT 0,
+                total DECIMAL(10,2) NOT NULL DEFAULT 0,
+                notes VARCHAR(500) DEFAULT '',
+                order_date DATE NOT NULL,
+                created_at DATETIME NOT NULL,
+                created_by VARCHAR(100) DEFAULT '',
+                INDEX idx_co_company (company_name),
+                INDEX idx_co_date (order_date)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
         if (!column_exists($db, 'users', 'permissions')) {
             $db->exec("ALTER TABLE users ADD COLUMN permissions VARCHAR(500) DEFAULT ''");
@@ -172,6 +187,21 @@ function init_db(PDO $db) {
             );
             CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+            CREATE TABLE IF NOT EXISTS company_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_name TEXT NOT NULL,
+                department TEXT DEFAULT '',
+                package TEXT NOT NULL,
+                meals INTEGER NOT NULL DEFAULT 0,
+                price REAL NOT NULL DEFAULT 0,
+                total REAL NOT NULL DEFAULT 0,
+                notes TEXT DEFAULT '',
+                order_date TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                created_by TEXT DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS idx_co_company ON company_orders(company_name);
+            CREATE INDEX IF NOT EXISTS idx_co_date ON company_orders(order_date);
         ");
         if (!column_exists($db, 'users', 'permissions')) {
             $db->exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT ''");
@@ -950,6 +980,90 @@ function api_update_user($data) {
     $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?');
     $stmt->execute($params);
     json_out(['success' => true, 'message' => 'تم تحديث بيانات المستخدم']);
+}
+
+// ===================== طلبات وجبات الشركات =====================
+function api_add_company_order($data) {
+    $user = require_page_access('cashier');
+    $db = db();
+    $company = trim((string)($data['companyName'] ?? ''));
+    $department = trim((string)($data['department'] ?? ''));
+    $package = (string)($data['package'] ?? 'جافة ×50');
+    if (!in_array($package, ['جافة ×50', 'جافة ×100'], true)) $package = 'جافة ×50';
+    $meals = (int)($data['meals'] ?? 0);
+    $price = (float)($data['price'] ?? 0);
+    $notes = trim((string)($data['notes'] ?? ''));
+
+    if ($company === '') json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+    if ($meals <= 0) json_out(['success' => false, 'message' => 'أدخل عدد الوجبات']);
+    if ($price <= 0) json_out(['success' => false, 'message' => 'أدخل قيمة الوجبة']);
+
+    $total = $meals * $price;
+    $stmt = $db->prepare('INSERT INTO company_orders (company_name, department, package, meals, price, total, notes, order_date, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$company, $department, $package, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username']]);
+    json_out(['success' => true, 'message' => 'تم تسجيل طلب الشركة بنجاح', 'total' => $total]);
+}
+
+/** طلبات شركات اليوم: مجمعة باسم الشركة مع الإجماليات والتفاصيل */
+function api_company_today() {
+    require_page_access('cashier');
+    $db = db();
+    $res = $db->query('SELECT * FROM company_orders WHERE order_date = ' . $db->quote(date('Y-m-d')) . ' ORDER BY created_at DESC');
+    $orders = [];
+    while ($row = $res->fetch()) {
+        $row['meals'] = (int)$row['meals'];
+        $row['price'] = (float)$row['price'];
+        $row['total'] = (float)$row['total'];
+        $orders[] = $row;
+    }
+    $groups = [];
+    foreach ($orders as $o) {
+        $k = $o['company_name'];
+        if (!isset($groups[$k])) $groups[$k] = ['company' => $k, 'orders' => [], 'totalMeals' => 0, 'total' => 0.0];
+        $groups[$k]['orders'][] = $o;
+        $groups[$k]['totalMeals'] += $o['meals'];
+        $groups[$k]['total'] += $o['total'];
+    }
+    $g = array_values($groups);
+    usort($g, function($a, $b) { return $b['total'] <=> $a['total']; });
+    json_out(['success' => true, 'groups' => $g, 'grandTotal' => array_sum(array_column($g, 'total')), 'grandMeals' => array_sum(array_column($g, 'totalMeals'))]);
+}
+
+/** تقرير الشركات خلال فترة: مجمعة باسم الشركة + تفاصيل كل طلب */
+function api_company_report($data) {
+    require_role(['admin']);
+    $db = db();
+    $from = date('Y-m-d', strtotime((string)($data['from'] ?? date('Y-m-d'))));
+    $to = date('Y-m-d', strtotime((string)($data['to'] ?? date('Y-m-d'))));
+    if ($from === false || $to === false) json_out(['success' => false, 'message' => 'تاريخ غير صحيح']);
+    if ($from === $to) {
+        $cond = 'order_date = ' . $db->quote($from);
+    } else {
+        if ($from > $to) { $t = $from; $from = $to; $to = $t; }
+        $cond = 'order_date >= ' . $db->quote($from) . ' AND order_date <= ' . $db->quote($to);
+    }
+    $res = $db->query('SELECT * FROM company_orders WHERE ' . $cond . ' ORDER BY company_name ASC, order_date ASC, created_at ASC');
+    $orders = [];
+    while ($row = $res->fetch()) {
+        $row['meals'] = (int)$row['meals'];
+        $row['price'] = (float)$row['price'];
+        $row['total'] = (float)$row['total'];
+        $orders[] = $row;
+    }
+    $groups = [];
+    foreach ($orders as $o) {
+        $k = $o['company_name'];
+        if (!isset($groups[$k])) $groups[$k] = ['company' => $k, 'orders' => [], 'ordersCount' => 0, 'totalMeals' => 0, 'total' => 0.0];
+        $groups[$k]['orders'][] = $o;
+        $groups[$k]['ordersCount']++;
+        $groups[$k]['totalMeals'] += $o['meals'];
+        $groups[$k]['total'] += $o['total'];
+    }
+    $g = array_values($groups);
+    usort($g, function($a, $b) { return $b['total'] <=> $a['total']; });
+    json_out(['success' => true, 'from' => $from, 'to' => $to, 'groups' => $g,
+        'grandTotal' => array_sum(array_column($g, 'total')),
+        'grandMeals' => array_sum(array_column($g, 'totalMeals'))]);
 }
 
 /** نص رسالة واتساب لتحديث حالة الطلب أو تأكيد استلامه */

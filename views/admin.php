@@ -64,6 +64,17 @@
     .top-item-row .name { font-size:12.5px; font-weight:700; width:130px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .top-item-row .qty { font-size:12px; color:var(--muted); font-weight:700; width:44px; text-align:left; }
 
+    .co-group { border:1px solid var(--border); border-radius:12px; margin-bottom:8px; overflow:hidden; background:var(--surface); }
+    .co-group .cg-head { display:flex; justify-content:space-between; align-items:center; padding:11px 12px; cursor:pointer; flex-wrap:wrap; gap:6px; }
+    .co-group .cg-head .name { font-weight:800; color:var(--primary); font-size:13.5px; text-decoration:underline; }
+    .co-group .cg-body { display:none; border-top:1px dashed var(--border); padding:8px 12px; font-size:12.5px; }
+    .co-group .cg-body.show { display:block; }
+    .co-group .cg-row { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed var(--border); flex-wrap:wrap; }
+    .co-group .cg-row:last-child { border-bottom:none; }
+    .co-group .cg-row .muted { color:var(--muted); font-size:11px; }
+    .co-date-row { display:flex; gap:8px; align-items:end; flex-wrap:wrap; }
+    .co-date-row .form-row { margin-bottom:0; flex:1; min-width:120px; }
+    .co-date-row button { flex-shrink:0; }
     .perm-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
     .perm-chip { display:flex; align-items:center; gap:5px; font-size:11px; padding:4px 9px; border-radius:14px; background:var(--bg); border:1px solid var(--border); cursor:pointer; font-weight:700; }
     .perm-chip input { accent-color: var(--primary); }
@@ -215,6 +226,17 @@
       <button class="primary" onclick="loadDailyReport()">عرض التقرير</button>
     </div>
     <div id="reportResult"></div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>🏢 تقرير طلبات الشركات (وجبات جافة)</h3>
+      <div class="co-date-row">
+        <div class="form-row"><label>من تاريخ</label><input type="date" id="coFrom"></div>
+        <div class="form-row"><label>إلى تاريخ</label><input type="date" id="coTo"></div>
+        <button class="primary" onclick="loadCompanyReport()">عرض التقرير</button>
+        <button class="primary" style="background:#eee;color:#555" onclick="loadCompanyReportToday()">تقرير اليوم</button>
+      </div>
+      <div id="companyReportResult" style="margin-top:12px"></div>
+    </div>
   </div>
 
   <!-- الإعدادات -->
@@ -398,6 +420,63 @@
       } catch (e) {
         document.getElementById('reportResult').innerHTML = '<div class="card">خطأ في الاتصال بالسيرفر</div>';
       }
+    }
+
+    // ===== تقرير طلبات الشركات =====
+    async function loadCompanyReportToday() {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+      document.getElementById('coFrom').value = today;
+      document.getElementById('coTo').value = today;
+      loadCompanyReport();
+    }
+
+    async function loadCompanyReport() {
+      const from = document.getElementById('coFrom').value;
+      const to = document.getElementById('coTo').value;
+      const box = document.getElementById('companyReportResult');
+      if (!from || !to) { box.innerHTML = '<p style="font-size:13px;color:var(--muted)">اختر التاريخ من وإلى</p>'; return; }
+      box.innerHTML = '<p style="font-size:13px">جاري التحميل...</p>';
+      try {
+        const res = await api('company_report', { from, to });
+        if (!res.success) { box.innerHTML = '<p style="font-size:13px">' + esc(res.message || 'خطأ') + '</p>'; return; }
+        if (!res.groups.length) {
+          box.innerHTML = '<p style="font-size:13px;color:var(--muted)">لا توجد طلبات شركات في هذه الفترة</p>';
+          return;
+        }
+        const rangeLabel = res.from === res.to ? res.from : res.from + ' ← ' + res.to;
+        box.innerHTML = `
+          <div class="kpis" style="margin-bottom:12px">
+            <div class="kpi orange"><div class="icon">🏢</div><div class="num">${res.groups.length}</div><div class="label">عدد الشركات</div></div>
+            <div class="kpi green"><div class="icon">🍱</div><div class="num">${res.grandMeals}</div><div class="label">إجمالي الوجبات</div></div>
+            <div class="kpi red"><div class="icon">💰</div><div class="num">${Math.round(res.grandTotal)}</div><div class="label">إجمالي الفترة (ج.م)</div></div>
+            <div class="kpi blue"><div class="icon">📅</div><div class="num" style="font-size:13px">${rangeLabel}</div><div class="label">الفترة</div></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px">اضغط على اسم الشركة لعرض تفاصيل طلباتها</p>
+          ${res.groups.map((g, gi) => `
+            <div class="co-group">
+              <div class="cg-head" onclick="toggleCgBody(${gi}, event)">
+                <span class="name">${esc(g.company)}</span>
+                <span><b>${g.ordersCount} طلب · ${g.totalMeals} وجبة · ${Math.round(g.total)} ج.م</b> ▾</span>
+              </div>
+              <div class="cg-body" id="cgBody-${gi}">
+                ${g.orders.map(o => `
+                  <div class="cg-row">
+                    <span><b>${esc(o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة${o.department ? ' · 🏬 ' + esc(o.department) : ''}</span>
+                    <span style="text-align:left"><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.order_date)} — ${esc(o.created_at.slice(11))} · بواسطة ${esc(o.created_by)}</span></span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        `;
+      } catch (e) {
+        box.innerHTML = '<p style="font-size:13px">خطأ في الاتصال بالسيرفر</p>';
+      }
+    }
+
+    function toggleCgBody(gi, ev) {
+      ev.stopPropagation();
+      document.getElementById('cgBody-' + gi).classList.toggle('show');
     }
 
     // ===== Orders quick view =====
