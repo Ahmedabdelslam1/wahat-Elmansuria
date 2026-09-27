@@ -173,6 +173,7 @@
         <input id="coNotes" placeholder="ملاحظات (اختياري)">
         <div class="co-live-total"><span>إجمالي طلب الشركة</span><span id="coLiveTotal">0 ج.م</span></div>
         <button class="co-submit" id="coSubmitBtn" onclick="submitCompanyOrder()">🏢 تسجيل طلب الشركة</button>
+        <button class="co-submit" id="coEditCancelBtn" style="display:none;background:#eee;color:#555" onclick="coResetForm()">✖ خروج من وضع التعديل</button>
       </div>
       <datalist id="coCompaniesList"></datalist>
     </div>
@@ -372,6 +373,67 @@
       coUpdateTotal();
     }
 
+    let editCoId = null;
+
+    function coResetForm() {
+      editCoId = null;
+      document.getElementById('coSubmitBtn').textContent = '🏢 تسجيل طلب الشركة';
+      document.getElementById('coEditCancelBtn').style.display = 'none';
+      ['coCompany', 'coDepartment', 'coMeals', 'coPrice', 'coNotes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('coPackage').value = 'جافة ×50';
+      document.getElementById('coItem').style.display = 'none';
+      coUpdateTotal();
+    }
+
+    async function coEditRow(id) {
+      const o = coRowsCache[id];
+      if (!o) return;
+      editCoId = id;
+      document.getElementById('coCompany').value = o.company_name || '';
+      document.getElementById('coDepartment').value = o.department || '';
+      document.getElementById('coMeals').value = o.meals || 1;
+      document.getElementById('coPrice').value = o.price || '';
+      document.getElementById('coNotes').value = o.notes || '';
+      const pkgSel = document.getElementById('coPackage');
+      pkgSel.value = ['جافة ×50', 'جافة ×100', 'من المنيو'].includes(o.package) ? o.package : 'جافة ×50';
+      const itemSel = document.getElementById('coItem');
+      if (pkgSel.value === 'من المنيو') {
+        await coPackageChanged();
+        const wanted = o.item_name || '';
+        let opt = [...itemSel.options].find(x => x.textContent.replace(/ \(.*\)/, '').trim() === wanted);
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = 'custom-' + wanted;
+          opt.dataset.price = o.price;
+          opt.textContent = wanted + ' (' + o.price + ' ج.م)';
+          itemSel.appendChild(opt);
+        }
+        itemSel.value = opt.value;
+      } else {
+        itemSel.style.display = 'none';
+      }
+      document.getElementById('coSubmitBtn').textContent = '💾 حفظ التعديلات';
+      document.getElementById('coEditCancelBtn').style.display = 'block';
+      coUpdateTotal();
+      document.querySelector('.co-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function coCancelRow(id) {
+      if (!confirm('إلغاء هذا البند؟ لن يُحسب في تقارير الشركات')) return;
+      try {
+        const res = await api('cancel_company_order', { id });
+        if (res.success) loadCompaniesToday(); else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
+    async function coDeleteRow(id) {
+      if (!confirm('حذف هذا البند نهائيًا؟ لا يمكن التراجع!')) return;
+      try {
+        const res = await api('delete_company_order', { id });
+        if (res.success) { if (editCoId === id) coResetForm(); loadCompaniesToday(); } else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
     async function submitCompanyOrder() {
       const companyName = document.getElementById('coCompany').value.trim();
       const department = document.getElementById('coDepartment').value.trim();
@@ -392,11 +454,14 @@
       const btn = document.getElementById('coSubmitBtn');
       btn.disabled = true;
       try {
-        const res = await api('add_company_order', { companyName, department, package: packageType, itemName, meals, price, notes });
+        const payload = { companyName, department, package: packageType, itemName, meals, price, notes };
+        const res = editCoId
+          ? await api('update_company_order', Object.assign({ id: editCoId }, payload))
+          : await api('add_company_order', payload);
         btn.disabled = false;
         if (res.success) {
-          ['coDepartment', 'coMeals', 'coPrice', 'coNotes'].forEach(id => document.getElementById(id).value = '');
-          coUpdateTotal();
+          alert(editCoId ? 'تم تعديل البند بنجاح' : res.message);
+          coResetForm();
           loadCompaniesToday();
         } else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
@@ -414,6 +479,8 @@
         document.getElementById('coGroupsList').innerHTML = '<div class="empty">خطأ في الاتصال بالسيرفر</div>';
       }
     }
+
+    let coRowsCache = {};
 
     function renderCompanyGroups(groups, grandTotal, grandMeals) {
       const grand = document.getElementById('coGrand');
@@ -433,12 +500,21 @@
             <span class="ctotal">${g.totalMeals} وجبة · ${Math.round(g.total)} ج.م ▾</span>
           </div>
           <div class="co-body" id="coBody-${gi}">
-            ${g.orders.map(o => `
-              <div class="co-row">
-                <span><b>${esc(o.package === 'من المنيو' && o.item_name ? o.item_name : o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة</span>
-                <span><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.created_at)}${o.department ? ' · ' + esc(o.department) : ''}</span></span>
-              </div>
-            `).join('')}
+            ${(() => { g.orders.forEach(o => { coRowsCache[o.id] = o; }); return ''; })()}
+            ${g.orders.map(o => {
+              const cancelled = o.status === 'ملغي';
+              const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+              return `
+              <div class="co-row" ${cancelled ? 'style="opacity:.5"' : ''}>
+                <span>${cancelled ? '<span style="background:#ffebe9;color:#ff3b30;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:800">ملغي</span> ' : ''}<b>${esc(label)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة${o.order_id ? ' <span class="muted">(طلب ' + esc(o.order_id) + ')</span>' : ''}</span>
+                <span style="display:flex;gap:5px;align-items:center">
+                  <span style="text-align:left"><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.created_at)}${o.department ? ' · ' + esc(o.department) : ''}</span></span>
+                  ${!cancelled ? `<button class="act-btn act-edit" onclick="coEditRow(${o.id})">✏️ تعديل</button>` : ''}
+                  ${!cancelled ? `<button class="act-btn act-cancel" onclick="coCancelRow(${o.id})">✖ إلغاء</button>` : ''}
+                  <button class="act-btn act-del" onclick="coDeleteRow(${o.id})">🗑 حذف</button>
+                </span>
+              </div>`;
+            }).join('')}
           </div>
         </div>
       `).join('');

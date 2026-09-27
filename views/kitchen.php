@@ -36,6 +36,15 @@
     .stats-bar { display:flex; gap:10px; padding:10px 14px; overflow-x:auto; }
     .stat-chip { flex-shrink:0; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 16px; text-align:center; min-width:100px; }
     .stat-chip b { display:block; font-size:16px; font-weight:800; }
+    .co-section { margin:14px 16px 4px; }
+    .co-section h3 { font-size:14px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+    .co-companies { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+    .co-company-card { flex:0 0 auto; min-width:220px; max-width:320px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; }
+    .co-company-card .co-cname { font-weight:800; font-size:13px; margin-bottom:8px; color:#34c759; }
+    .co-company-card .co-line { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; border-bottom:1px dashed var(--border); }
+    .co-company-card .co-line:last-of-type { border-bottom:none; }
+    .co-company-card .co-meals { font-weight:800; white-space:nowrap; }
+    .co-company-card .co-sum { margin-top:8px; padding-top:8px; border-top:2px solid var(--border); font-size:12px; font-weight:800; display:flex; justify-content:space-between; }
     .stat-chip span { font-size:10px; color:var(--muted); font-weight:700; }
 
     .board {
@@ -131,6 +140,11 @@
       <div class="col-head"><span>🟢 جاهز للتسليم</span><span class="count" id="cReady">0</span></div>
       <div id="listReady"></div>
     </div>
+  </div>
+
+  <div class="co-section">
+    <h3>🏢 طلبات الشركات اليوم <span class="count" id="coCount">0</span></h3>
+    <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
   </div>
 
   <script>
@@ -263,8 +277,36 @@
     tickClock();
     setInterval(tickClock, 1000);
 
+    async function loadCompanyOrders() {
+      try {
+        const res = await api('company_today');
+        const box = document.getElementById('coCompanies');
+        if (!res.success) return;
+        const active = res.groups
+          .map(g => ({ ...g, orders: g.orders.filter(o => o.status !== 'ملغي') }))
+          .filter(g => g.orders.length);
+        document.getElementById('coCount').textContent = active.length;
+        if (!active.length) {
+          box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div>';
+          return;
+        }
+        box.innerHTML = active.map(g => `
+          <div class="co-company-card">
+            <div class="co-cname">🏢 ${esc(g.company)}</div>
+            ${g.orders.map(o => {
+              const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+              return `<div class="co-line"><span>${esc(label)}</span><span class="co-meals">× ${o.meals} وجبة</span></div>`;
+            }).join('')}
+            <div class="co-sum"><span>الإجمالي</span><span>${g.totalMeals} وجبة</span></div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
     loadOrders();
     setInterval(loadOrders, 8000);
+    loadCompanyOrders();
+    setInterval(loadCompanyOrders, 8000);
   </script>
 </body>
 </html>

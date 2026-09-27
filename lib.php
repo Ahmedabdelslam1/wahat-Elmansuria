@@ -156,6 +156,9 @@ function init_db(PDO $db) {
         if (!column_exists($db, 'company_orders', 'order_id')) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
         }
+        if (!column_exists($db, 'company_orders', 'status')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'نشط'");
+        }
         $db->exec("
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -254,6 +257,9 @@ function init_db(PDO $db) {
         }
         if (!column_exists($db, 'company_orders', 'order_id')) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
+        }
+        if (!column_exists($db, 'company_orders', 'status')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'نشط'");
         }
         $db->exec("
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -1223,7 +1229,11 @@ function api_add_company_order($data) {
 
 /** طلبات شركات اليوم: مجمعة باسم الشركة مع الإجماليات والتفاصيل */
 function api_company_today() {
-    require_page_access('cashier');
+    // الكاشير أو المطبخ: المطبخ يرى وجبات الشركات وعددها
+    $u = current_user();
+    if (!$u || !array_intersect(['cashier', 'kitchen'], user_allowed_pages($u))) {
+        json_out(['success' => false, 'message' => 'غير مصرح']);
+    }
     $db = db();
     $res = $db->query('SELECT * FROM company_orders WHERE order_date = ' . $db->quote(date('Y-m-d')) . ' ORDER BY created_at DESC');
     $orders = [];
@@ -1238,12 +1248,78 @@ function api_company_today() {
         $k = $o['company_name'];
         if (!isset($groups[$k])) $groups[$k] = ['company' => $k, 'orders' => [], 'totalMeals' => 0, 'total' => 0.0];
         $groups[$k]['orders'][] = $o;
+        // الملغي لا يُحسب في الإجماليات
+        if (($o['status'] ?? 'نشط') === 'ملغي') continue;
         $groups[$k]['totalMeals'] += $o['meals'];
         $groups[$k]['total'] += $o['total'];
     }
     $g = array_values($groups);
     usort($g, function($a, $b) { return $b['total'] <=> $a['total']; });
     json_out(['success' => true, 'groups' => $g, 'grandTotal' => array_sum(array_column($g, 'total')), 'grandMeals' => array_sum(array_column($g, 'totalMeals'))]);
+}
+
+/** تعديل بند طلب شركة */
+function api_update_company_order($data) {
+    $user = require_page_access('cashier');
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    $q = $db->prepare('SELECT * FROM company_orders WHERE id = ?');
+    $q->execute([$id]);
+    $o = $q->fetch();
+    if (!$o) json_out(['success' => false, 'message' => 'البند غير موجود']);
+
+    $company = trim((string)($data['companyName'] ?? $o['company_name']));
+    $department = trim((string)($data['department'] ?? $o['department']));
+    $package = (string)($data['package'] ?? $o['package']);
+    if (!in_array($package, ['جافة ×50', 'جافة ×100', 'من المنيو'], true)) $package = 'جافة ×50';
+    $itemName = trim((string)($data['itemName'] ?? ''));
+    if ($package === 'من المنيو' && $itemName === '') json_out(['success' => false, 'message' => 'اختر الصنف من المنيو']);
+    $meals = (int)($data['meals'] ?? $o['meals']);
+    $price = (float)($data['price'] ?? $o['price']);
+    $notes = trim((string)($data['notes'] ?? $o['notes']));
+    if ($company === '') json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+    if ($meals <= 0) json_out(['success' => false, 'message' => 'أدخل عدد الوجبات']);
+    if ($price <= 0) json_out(['success' => false, 'message' => 'أدخل قيمة الوجبة']);
+
+    $total = $meals * $price;
+    $st = $db->prepare('UPDATE company_orders SET company_name = ?, department = ?, package = ?, item_name = ?, meals = ?, price = ?, total = ?, notes = ? WHERE id = ?');
+    $st->execute([$company, $department, $package, $package === 'من المنيو' ? $itemName : $package, $meals, $price, $total, $notes, $id]);
+    log_activity('تعديل طلب شركة', 'طلب شركة', $company, 'بند #' . $id . ': ' . $package . ($package === 'من المنيو' ? ' (' . $itemName . ')' : '') . ' × ' . $meals . ' = ' . $total . ' ج.م');
+    json_out(['success' => true, 'message' => 'تم تعديل بند الشركة', 'total' => $total]);
+}
+
+/** إلغاء بند طلب شركة (لا يُحسب في التقارير) */
+function api_cancel_company_order($data) {
+    $user = require_page_access('cashier');
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    $st = $db->prepare("UPDATE company_orders SET status = 'ملغي' WHERE id = ?");
+    $st->execute([$id]);
+    if ((int)$st->rowCount()) {
+        $q = $db->prepare('SELECT company_name, package, item_name, meals, total FROM company_orders WHERE id = ?');
+        $q->execute([$id]);
+        $o = $q->fetch();
+        log_activity('إلغاء طلب شركة', 'طلب شركة', $o ? $o['company_name'] : (string)$id, 'بند #' . $id . ' (' . ($o ? (($o['package'] === 'من المنيو' && $o['item_name'] ? $o['item_name'] : $o['package']) . ' × ' . $o['meals']) : '') . ')');
+        json_out(['success' => true, 'message' => 'تم إلغاء البند']);
+    }
+    json_out(['success' => false, 'message' => 'البند غير موجود']);
+}
+
+/** حذف بند طلب شركة نهائيًا */
+function api_delete_company_order($data) {
+    $user = require_page_access('cashier');
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    $q = $db->prepare('SELECT company_name, package, item_name, meals, total FROM company_orders WHERE id = ?');
+    $q->execute([$id]);
+    $o = $q->fetch();
+    $st = $db->prepare('DELETE FROM company_orders WHERE id = ?');
+    $st->execute([$id]);
+    if ((int)$st->rowCount()) {
+        log_activity('حذف طلب شركة', 'طلب شركة', $o ? $o['company_name'] : (string)$id, 'بند #' . $id . ' حُذف نهائيًا');
+        json_out(['success' => true, 'message' => 'تم حذف البند']);
+    }
+    json_out(['success' => false, 'message' => 'البند غير موجود']);
 }
 
 /** تقرير الشركات خلال فترة: مجمعة باسم الشركة + تفاصيل كل طلب */
@@ -1259,7 +1335,7 @@ function api_company_report($data) {
         if ($from > $to) { $t = $from; $from = $to; $to = $t; }
         $cond = 'order_date >= ' . $db->quote($from) . ' AND order_date <= ' . $db->quote($to);
     }
-    $res = $db->query('SELECT * FROM company_orders WHERE ' . $cond . ' ORDER BY company_name ASC, order_date ASC, created_at ASC');
+    $res = $db->query("SELECT * FROM company_orders WHERE " . $cond . " AND (status IS NULL OR status != 'ملغي') ORDER BY company_name ASC, order_date ASC, created_at ASC");
     $orders = [];
     while ($row = $res->fetch()) {
         $row['meals'] = (int)$row['meals'];
