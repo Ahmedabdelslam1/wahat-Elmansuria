@@ -175,6 +175,24 @@
       </div>
       <button class="primary" id="addUserBtn" onclick="addNewUser()">إضافة</button>
     </div>
+    <div class="card" id="editUserCard" style="display:none;border-color:var(--primary)">
+      <h3 id="editUserTitle">تعديل مستخدم</h3>
+      <div class="form-row"><label>اسم المستخدم (للدخول)</label><input id="editUsername"></div>
+      <div class="form-row"><label>الاسم الظاهر (يُطبع على الإيصال)</label><input id="editName"></div>
+      <div class="form-row"><label>كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)</label><input id="editPassword" type="password"></div>
+      <div class="form-row">
+        <label>الدور</label>
+        <select id="editRole">
+          <option value="admin">مدير</option>
+          <option value="cashier">كاشير</option>
+          <option value="kitchen">مطبخ</option>
+          <option value="customer">عميل</option>
+        </select>
+      </div>
+      <div class="form-row"><label><input type="checkbox" id="editActive" checked style="width:auto"> الحساب مُفعّل</label></div>
+      <button class="primary" onclick="saveUserEdit()">حفظ التعديلات</button>
+      <button class="primary" style="background:#eee;color:#555;margin-right:6px" onclick="cancelUserEdit()">إلغاء</button>
+    </div>
     <div class="card">
       <h3>المستخدمون الحاليون</h3>
       <div id="usersList">جاري التحميل...</div>
@@ -206,6 +224,16 @@
       <div class="form-row"><label>اسم المطعم</label><input id="setRestaurantName"></div>
       <div class="form-row"><label>رقم الهاتف</label><input id="setPhone"></div>
       <div class="form-row"><label>العنوان</label><input id="setAddress"></div>
+      <div class="form-row"><label>رابط صورة اللوجو (يظهر على الفاتورة)</label><input id="setLogo" placeholder="https://..."></div>
+      <div class="form-row"><label>قيمة التوصيل (ج.م - تُضاف على فواتير الدليفري)</label><input id="setDeliveryFee" type="number" min="0" step="0.5"></div>
+    </div>
+    <div class="card">
+      <h3>📱 واتساب المطعم لاستقبال الطلبات</h3>
+      <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
+        كل طلب جديد يُرسل تلقائيًا بهدفاته الكاملة على هذا الرقم عبر واتساب (يتطلب بيانات WhatsApp Cloud API بالأسفل).
+        اكتبه بالصيغة الدولية بدون + مثل: 201153431728
+      </p>
+      <div class="form-row"><label>رقم واتساب المطعم المخصص للطلبات</label><input id="setOrdersWhatsapp" placeholder="201153431728"></div>
     </div>
     <div class="card">
       <h3>تنبيهات تليجرام (اختياري)</h3>
@@ -234,6 +262,7 @@
     }
 
     let trendChart = null, statusChart = null;
+    let editingUserId = null;
     const PAGE_LABELS = { admin: 'لوحة المدير', cashier: 'الكاشير', kitchen: 'المطبخ', menu: 'المنيو', cart: 'السلة', invoice: 'الفواتير' };
 
     function showPanel(id, btn) {
@@ -264,6 +293,9 @@
         document.getElementById('setTelegramChat').value = s.telegramChatId || '';
         document.getElementById('setWaPhoneId').value = s.whatsappPhoneId || '';
         document.getElementById('setWaToken').value = s.whatsappToken || '';
+        document.getElementById('setOrdersWhatsapp').value = s.ordersWhatsapp || '';
+        document.getElementById('setDeliveryFee').value = s.deliveryFee || 0;
+        document.getElementById('setLogo').value = s.logo || '';
       } catch (e) {}
     }
 
@@ -279,6 +311,9 @@
           telegramChatId: document.getElementById('setTelegramChat').value.trim(),
           whatsappPhoneId: document.getElementById('setWaPhoneId').value.trim(),
           whatsappToken: document.getElementById('setWaToken').value.trim(),
+          ordersWhatsapp: document.getElementById('setOrdersWhatsapp').value.trim(),
+          deliveryFee: document.getElementById('setDeliveryFee').value.trim(),
+          logo: document.getElementById('setLogo').value.trim(),
         });
         btn.disabled = false;
         if (res.success) alert('تم حفظ الإعدادات بنجاح');
@@ -456,6 +491,8 @@
         const box = document.getElementById('usersList');
         if (!res.success) { box.innerHTML = 'غير مصرح'; return; }
         box.innerHTML = res.users.map(u => {
+          window.__users = window.__users || {};
+          window.__users[u.id] = u;
           const allPages = ['cashier','kitchen','admin','invoice'];
           const chips = allPages.map(p => `
             <label class="perm-chip">
@@ -465,9 +502,12 @@
           `).join('');
           return `
             <div class="user-row" style="flex-direction:column;align-items:stretch">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span><strong>${esc(u.name)}</strong> (${esc(u.username)}) <span class="role-badge ${u.role}">${u.role}</span></span>
-                <button onclick="saveUserPerms(${u.id})">حفظ</button>
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                <span><strong>${esc(u.name)}</strong> (${esc(u.username)}) <span class="role-badge ${u.role}">${u.role}</span>${u.active ? '' : ' <span style="color:#ff3b30;font-weight:800;font-size:11px">(موقوف)</span>'}</span>
+                <span style="display:flex;gap:6px">
+                  <button onclick="editUser(${u.id})">✏️ تعديل</button>
+                  <button onclick="saveUserPerms(${u.id})">حفظ الصلاحيات</button>
+                </span>
               </div>
               <div class="perm-chips" id="perms-${u.id}">${u.role === 'admin' ? '<span style="font-size:11px;color:var(--muted)">المدير يملك كل الصفحات دائمًا</span>' : chips}</div>
             </div>
@@ -506,6 +546,46 @@
           loadUsers();
         } else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
+    }
+
+    function editUser(uid) {
+      const u = (window.__users || {})[uid];
+      if (!u) return;
+      editingUserId = uid;
+      document.getElementById('editUserTitle').textContent = 'تعديل المستخدم: ' + u.name;
+      document.getElementById('editUsername').value = u.username;
+      document.getElementById('editName').value = u.name;
+      document.getElementById('editPassword').value = '';
+      document.getElementById('editRole').value = u.role;
+      document.getElementById('editActive').checked = !!u.active;
+      document.getElementById('editUserCard').style.display = 'block';
+      document.getElementById('editUserCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelUserEdit() {
+      editingUserId = null;
+      document.getElementById('editUserCard').style.display = 'none';
+    }
+
+    async function saveUserEdit() {
+      if (!editingUserId) return;
+      const payload = {
+        id: editingUserId,
+        username: document.getElementById('editUsername').value.trim(),
+        name: document.getElementById('editName').value.trim(),
+        password: document.getElementById('editPassword').value,
+        role: document.getElementById('editRole').value,
+        active: document.getElementById('editActive').checked,
+      };
+      if (!payload.username || !payload.name) { alert('أكمل اسم المستخدم والاسم الظاهر'); return; }
+      try {
+        const res = await api('update_user', payload);
+        if (res.success) {
+          alert('تم تحديث بيانات المستخدم بنجاح');
+          cancelUserEdit();
+          loadUsers();
+        } else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
     }
 
     async function doLogout() {

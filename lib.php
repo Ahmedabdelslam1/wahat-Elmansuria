@@ -103,6 +103,8 @@ function init_db(PDO $db) {
                 status VARCHAR(30) NOT NULL DEFAULT 'جديد',
                 order_type VARCHAR(20) NOT NULL DEFAULT 'صالة',
                 notes VARCHAR(1000) DEFAULT '',
+                address VARCHAR(500) DEFAULT '',
+                delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
                 created_by VARCHAR(100) DEFAULT 'guest',
                 INDEX idx_orders_created (created_at),
                 INDEX idx_orders_status (status)
@@ -120,6 +122,12 @@ function init_db(PDO $db) {
         }
         if (!column_exists($db, 'orders', 'order_type')) {
             $db->exec("ALTER TABLE orders ADD COLUMN order_type VARCHAR(20) NOT NULL DEFAULT 'صالة'");
+        }
+        if (!column_exists($db, 'orders', 'address')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN address VARCHAR(500) DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'delivery_fee')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0");
         }
     } else {
         $db->exec("
@@ -154,6 +162,8 @@ function init_db(PDO $db) {
                 status TEXT NOT NULL DEFAULT 'جديد',
                 order_type TEXT NOT NULL DEFAULT 'صالة',
                 notes TEXT DEFAULT '',
+                address TEXT DEFAULT '',
+                delivery_fee REAL NOT NULL DEFAULT 0,
                 created_by TEXT DEFAULT 'guest'
             );
             CREATE TABLE IF NOT EXISTS settings (
@@ -171,6 +181,12 @@ function init_db(PDO $db) {
         }
         if (!column_exists($db, 'orders', 'order_type')) {
             $db->exec("ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT 'صالة'");
+        }
+        if (!column_exists($db, 'orders', 'address')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN address TEXT DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'delivery_fee')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN delivery_fee REAL NOT NULL DEFAULT 0");
         }
     }
 
@@ -202,6 +218,9 @@ function init_db(PDO $db) {
         'whatsappNumber' => '201153431728',
         'whatsappToken' => '',
         'whatsappPhoneId' => '',
+        'ordersWhatsapp' => '',
+        'deliveryFee' => '25',
+        'logo' => '',
     ];
     $st = $db->prepare('INSERT INTO settings (`key`, `value`) VALUES (?, ?)');
     foreach ($defaults as $k => $v) {
@@ -506,10 +525,21 @@ function api_place_order($data) {
     $customerName = trim((string)($data['customerName'] ?? '')) ?: ($user ? $user['name'] : 'ضيف');
     $phone = trim((string)($data['phone'] ?? ''));
     $notes = trim((string)($data['notes'] ?? ''));
+    $address = trim((string)($data['address'] ?? ''));
     $orderType = (string)($data['orderType'] ?? 'صالة');
     if (!in_array($orderType, ['صالة', 'دليفري'], true)) $orderType = 'صالة';
+    if ($orderType === 'دليفري' && ($phone === '' || $address === '')) {
+        json_out(['success' => false, 'message' => 'طلبات الدليفري تتطلب رقم الهاتف والعنوان']);
+    }
 
-    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    // قيمة التوصيل تُضاف على الطلب في نوع دليفري فقط
+    $deliveryFee = 0.0;
+    if ($orderType === 'دليفري') {
+        $deliveryFee = (float)get_setting('deliveryFee', '0');
+        $total += $deliveryFee;
+    }
+
+    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, address, delivery_fee, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $orderId,
         date('Y-m-d H:i:s'),
@@ -520,10 +550,17 @@ function api_place_order($data) {
         'جديد',
         $orderType,
         $notes,
+        $address,
+        $deliveryFee,
         $user ? $user['username'] : 'guest',
     ]);
 
     send_order_notification($orderId, $customerName, $phone, $notes, $items, $total, $orderType);
+    // إرسال تفاصيل الطلب لرقم واتساب المطعم المخصص لاستقبال الطلبات
+    $ordersWa = get_setting('ordersWhatsapp', '');
+    if ($ordersWa) {
+        send_whatsapp_message($ordersWa, restaurant_order_message($orderId, $customerName, $phone, $address, $items, $deliveryFee, $total, $orderType, $notes, $user ? $user['name'] : 'موقع'));
+    }
     if ($phone) send_whatsapp_message($phone, whatsapp_order_message($orderId, $customerName, $items, $total, 'جديد', $orderType));
 
     json_out(['success' => true, 'orderId' => $orderId, 'total' => $total, 'message' => 'تم استلام طلبك بنجاح! رقم الطلب: ' . $orderId]);
@@ -663,7 +700,7 @@ function api_update_permissions($data) {
 function api_get_settings() {
     require_role(['admin']);
     $db = db();
-    $keys = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId'];
+    $keys = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId','ordersWhatsapp','deliveryFee','logo'];
     $out = [];
     foreach ($keys as $k) $out[$k] = get_setting($k, '');
     json_out(['success' => true, 'settings' => $out]);
@@ -672,7 +709,7 @@ function api_get_settings() {
 function api_update_settings($data) {
     require_role(['admin']);
     $db = db();
-    $allowed = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId'];
+    $allowed = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId','ordersWhatsapp','deliveryFee','logo'];
     $st = $db->prepare('UPDATE settings SET `value` = ? WHERE `key` = ?');
     $ins = $db->prepare('INSERT INTO settings (`key`, `value`) VALUES (?, ?)');
     foreach ($allowed as $k) {
@@ -792,12 +829,19 @@ function api_get_invoice($data) {
     if (!$order) json_out(['success' => false, 'message' => 'الطلب غير موجود']);
     $order['items'] = json_decode($order['items_json'], true) ?: [];
     $order['total'] = (float)$order['total'];
+    $order['delivery_fee'] = (float)($order['delivery_fee'] ?? 0);
+    $subtotal = 0.0;
+    foreach ($order['items'] as $it) $subtotal += (float)$it['price'] * (int)($it['qty'] ?? 1);
+    $order['subtotal'] = $subtotal;
+    // اسم المستخدم الذي أنشأ الطلب (يُطبع على الإيصال)
+    $cashierName = db_scalar($db, 'SELECT name FROM users WHERE username = ?', [(string)$order['created_by']]);
     unset($order['items_json']);
     json_out(['success' => true, 'order' => $order, 'restaurant' => [
         'name' => get_setting('restaurantName', 'واحة المنصورية'),
         'phone' => get_setting('phone', '01153431728'),
         'address' => get_setting('address', ''),
-    ]]);
+        'logo' => get_setting('logo', ''),
+    ], 'cashierName' => $cashierName ?: (string)$order['created_by']]);
 }
 
 // ===================== NOTIFICATIONS =====================
@@ -827,6 +871,85 @@ function send_order_notification($orderId, $customerName, $phone, $notes, $items
         curl_exec($ch);
         curl_close($ch);
     }
+}
+
+/** رسالة الطلب الجديد المرسلة لرقم واتساب المطعم المخصص لاستقبال الطلبات */
+function restaurant_order_message($orderId, $customerName, $phone, $address, $items, $deliveryFee, $total, $orderType, $notes, $cashierName = '') {
+    $lines = [];
+    $subtotal = 0.0;
+    foreach ($items as $i) {
+        $lines[] = "• {$i['name']} × {$i['qty']} = " . ((float)$i['price'] * (int)$i['qty']) . " ج";
+        $subtotal += (float)$i['price'] * (int)$i['qty'];
+    }
+    $itemsTxt = implode("\n", $lines);
+    $typeTxt = $orderType === 'دليفري' ? '🛵 دليفري' : '🍽️ صالة';
+    $msg = "🆕 *طلب جديد* - " . APP_NAME . "\n"
+         . "━━━━━━━━━━━━\n"
+         . "📋 رقم الطلب: {$orderId}\n"
+         . "{$typeTxt}\n"
+         . "👤 العميل: {$customerName}\n"
+         . "📞 الهاتف: " . ($phone ?: '-') . "\n";
+    if ($orderType === 'دليفري') $msg .= "📍 العنوان: " . ($address ?: '-') . "\n";
+    $msg .= "━━━━━━━━━━━━\n"
+         . "🍽️ الأصناف:\n{$itemsTxt}\n"
+         . "━━━━━━━━━━━━\n"
+         . "💰 المجموع: {$subtotal} ج\n";
+    if ($deliveryFee > 0) $msg .= "🛵 التوصيل: {$deliveryFee} ج\n";
+    $msg .= "💰 *الإجمالي: {$total} ج*\n";
+    if ($notes) $msg .= "📝 ملاحظات: {$notes}\n";
+    if ($cashierName) $msg .= "🧾 بواسطة: {$cashierName}\n";
+    return $msg;
+}
+
+/** إعدادات عامة للصفحات (بدون تسجيل دخول): قيمة التوصيل وبيانات المطعم */
+function api_public_settings() {
+    json_out(['success' => true, 'settings' => [
+        'restaurantName' => get_setting('restaurantName', APP_NAME),
+        'phone' => get_setting('phone', ''),
+        'address' => get_setting('address', ''),
+        'logo' => get_setting('logo', ''),
+        'deliveryFee' => (float)get_setting('deliveryFee', '0'),
+        'ordersWhatsapp' => get_setting('ordersWhatsapp', ''),
+    ]]);
+}
+
+function api_update_user($data) {
+    require_role(['admin']);
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) json_out(['success' => false, 'message' => 'مستخدم غير صحيح']);
+    $exists = db_scalar($db, 'SELECT COUNT(*) FROM users WHERE id = ?', [$id]);
+    if (!$exists) json_out(['success' => false, 'message' => 'المستخدم غير موجود']);
+
+    $username = trim((string)($data['username'] ?? ''));
+    $name = trim((string)($data['name'] ?? ''));
+    if ($username === '' || $name === '') json_out(['success' => false, 'message' => 'اسم المستخدم والاسم الظاهر مطلوبان']);
+
+    $dup = db_scalar($db, 'SELECT COUNT(*) FROM users WHERE username = ? AND id <> ?', [$username, $id]);
+    if ($dup) json_out(['success' => false, 'message' => 'اسم المستخدم موجود بالفعل لمستخدم آخر']);
+
+    $fields = ['username = ?', 'name = ?'];
+    $params = [$username, $name];
+
+    $password = (string)($data['password'] ?? '');
+    if ($password !== '') {
+        $fields[] = 'password_hash = ?';
+        $params[] = password_hash($password, PASSWORD_DEFAULT);
+    }
+
+    if (isset($data['role']) && in_array($data['role'], ['admin','cashier','kitchen','customer'], true)) {
+        $fields[] = 'role = ?';
+        $params[] = $data['role'];
+    }
+    if (isset($data['active'])) {
+        $fields[] = 'active = ?';
+        $params[] = !empty($data['active']) ? 1 : 0;
+    }
+
+    $params[] = $id;
+    $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?');
+    $stmt->execute($params);
+    json_out(['success' => true, 'message' => 'تم تحديث بيانات المستخدم']);
 }
 
 /** نص رسالة واتساب لتحديث حالة الطلب أو تأكيد استلامه */

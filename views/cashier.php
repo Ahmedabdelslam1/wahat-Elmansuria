@@ -126,6 +126,11 @@
     .qty-ctl button { width:24px; height:24px; border-radius:8px; border:none; background:var(--bg); font-weight:800; cursor:pointer; }
     .pos-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
     .pos-fields input { padding:9px 11px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:12.5px; }
+    .pos-address { display:none; margin-bottom:8px; }
+    .pos-address input { width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:12.5px; }
+    .pos-address.show { display:block; }
+    .fee-rows { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-weight:700; padding:2px 0 6px; }
+    .fee-rows.delivery-on { color:#ef6c00; }
     .type-toggle { display:flex; gap:8px; margin-bottom:8px; }
     .type-toggle button {
       flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg);
@@ -187,6 +192,10 @@
       <div class="pos-fields" style="grid-template-columns:1fr">
         <input id="posNotes" placeholder="ملاحظات (اختياري)">
       </div>
+      <div class="pos-address" id="posAddressWrap">
+        <input id="posAddress" placeholder="📍 عنوان التوصيل (إجباري للدليفري)">
+      </div>
+      <div id="feeRows"></div>
       <div class="pos-submit-row">
         <span class="pos-total" id="posTotal">0 ج.م</span>
         <button class="pos-submit" id="posSubmitBtn" onclick="submitPosOrder()">تأكيد الطلب</button>
@@ -215,6 +224,7 @@
   <script>
     let currentFilter = 'all';
     let cashierMenu = [];
+    let posDeliveryFee = 0;
     let posCart = [];
     let posOrderType = 'صالة';
     let knownOrderIds = new Set();
@@ -317,6 +327,8 @@
       posOrderType = type;
       document.getElementById('btnDinein').classList.toggle('active', type === 'صالة');
       document.getElementById('btnDelivery').classList.toggle('active', type === 'دليفري');
+      document.getElementById('posAddressWrap').classList.toggle('show', type === 'دليفري');
+      renderPosCart();
     }
     function renderPosCart() {
       const list = document.getElementById('posCartList');
@@ -335,12 +347,23 @@
           </div>
         `).join('');
       }
-      const total = posCart.reduce((s, c) => s + c.qty * c.price, 0);
+      const subtotal = posCart.reduce((s, c) => s + c.qty * c.price, 0);
+      const isDelivery = posOrderType === 'دليفري';
+      const fee = isDelivery ? posDeliveryFee : 0;
+      const total = subtotal + fee;
+      document.getElementById('feeRows').innerHTML = isDelivery
+        ? `<div class="fee-rows delivery-on"><span>المجموع: ${subtotal} ج.م</span><span>🛵 التوصيل: ${fee} ج.م</span></div>`
+        : '';
       document.getElementById('posTotal').textContent = total + ' ج.م';
     }
 
     async function submitPosOrder() {
       if (!posCart.length) { alert('أضف أصنافًا أولًا'); return; }
+      const address = document.getElementById('posAddress').value.trim();
+      if (posOrderType === 'دليفري') {
+        const dphone = document.getElementById('posPhone').value.trim();
+        if (!dphone || !address) { alert('طلبات الدليفري تتطلب رقم الهاتف والعنوان'); return; }
+      }
       const btn = document.getElementById('posSubmitBtn');
       btn.disabled = true;
       try {
@@ -349,6 +372,7 @@
           customerName: document.getElementById('posCustomer').value.trim(),
           phone: document.getElementById('posPhone').value.trim(),
           notes: document.getElementById('posNotes').value.trim(),
+          address: address,
           orderType: posOrderType,
         });
         btn.disabled = false;
@@ -358,6 +382,7 @@
           document.getElementById('posCustomer').value = '';
           document.getElementById('posPhone').value = '';
           document.getElementById('posNotes').value = '';
+          document.getElementById('posAddress').value = '';
           alert('تم إنشاء الطلب: ' + res.orderId);
           if (confirm('فتح فاتورة الطلب؟')) window.open('?page=invoice&id=' + encodeURIComponent(res.orderId), '_blank');
           loadOrders(currentFilter);
@@ -440,6 +465,7 @@
               <span class="order-status ${sCls}">${esc(o.status)}</span>
             </div>
             <div class="order-meta">${esc(o.customer_name)} | ${esc(o.phone || '-')} | ${esc(date)}</div>
+            ${isDelivery && o.address ? '<div class="order-meta" style="color:#ef6c00">📍 ' + esc(o.address) + '</div>' : ''}
             <div class="order-items">${itemsHtml}</div>
             <div class="order-total">${esc(o.total)} جنيه</div>
             ${o.notes ? '<div style="font-size:11.5px;color:#8b8b9a;margin-bottom:8px">ملاحظات: ' + esc(o.notes) + '</div>' : ''}
@@ -467,6 +493,9 @@
       window.location.href = '?page=login';
     }
 
+    api('public_settings').then(res => {
+      if (res.success && res.settings) posDeliveryFee = Number(res.settings.deliveryFee) || 0;
+    }).catch(() => {});
     loadMenu().then(renderPosGrid);
     loadOrders('all');
     setInterval(() => loadOrders(currentFilter), 12000);

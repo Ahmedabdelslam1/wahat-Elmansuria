@@ -32,6 +32,14 @@
       margin-bottom: 16px;
     }
     .inv-header h1 { color: #1f1f2c; font-size: 22px; margin-bottom: 4px; }
+    .inv-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 14px; margin: 0 auto 8px; display: block; }
+    .inv-head-flex { display: flex; align-items: center; gap: 12px; text-align: right; }
+    .inv-head-flex img { width: 56px; height: 56px; object-fit: contain; border-radius: 12px; flex-shrink: 0; }
+    .inv-head-flex .titles { flex: 1; }
+    .inv-head-flex h1 { margin-bottom: 2px; }
+    .meta-line { font-size: 12.5px; color: #3a3a4d; margin-top: 3px; }
+    .fee-line { display: flex; justify-content: space-between; font-size: 13px; color: #3a3a4d; padding: 5px 0; }
+    .fee-line.delivery { color: #ef6c00; font-weight: 700; }
     .inv-header .sub { color: #8b8b9a; font-size: 12px; }
     .badge {
       display: inline-block;
@@ -93,6 +101,7 @@
 <body>
   <div class="invoice" id="invoiceBox">
     <div class="inv-header">
+      <img class="inv-logo" id="restLogo" src="" alt="" style="display:none">
       <h1 id="restName"><?= e(APP_NAME) ?></h1>
       <div class="sub" id="restAddress">أول مدخل المنصورية</div>
       <div class="sub" id="restPhone">☎ 01153431728</div>
@@ -108,7 +117,11 @@
       <div style="text-align:left">
         <div>العميل: <strong id="customerName">-</strong></div>
         <div>الهاتف: <span id="customerPhone">-</span></div>
+        <div class="meta-line">الكاشير: <strong id="cashierName">-</strong></div>
       </div>
+    </div>
+    <div class="meta-line" id="addressBox" style="display:none; margin-bottom:14px; background:#fff8f0; border:1px dashed #ff9500; border-radius:10px; padding:8px 10px; color:#ef6c00; font-weight:700">
+      📍 <span id="orderAddress">-</span>
     </div>
 
     <table>
@@ -122,6 +135,10 @@
       <tbody id="itemsBody"></tbody>
     </table>
 
+    <div id="feeBox" style="display:none; margin-bottom:6px">
+      <div class="fee-line"><span>المجموع الفرعي</span><span id="subtotalAmount">0</span> </div>
+      <div class="fee-line delivery"><span>🛵 التوصيل</span><span id="deliveryFeeAmount">0</span></div>
+    </div>
     <div class="total-row">
       الإجمالي: <span id="totalAmount">0</span> جنيه
     </div>
@@ -159,11 +176,27 @@
         document.getElementById('restName').textContent = r.name;
         document.getElementById('restAddress').textContent = r.address;
         document.getElementById('restPhone').textContent = '☎ ' + r.phone;
+        if (r.logo) {
+          const lg = document.getElementById('restLogo');
+          lg.src = r.logo;
+          lg.style.display = 'block';
+        }
         document.getElementById('orderId').textContent = o.order_id;
         document.getElementById('orderDate').textContent = o.created_at || '-';
         document.getElementById('customerName').textContent = o.customer_name || '-';
         document.getElementById('customerPhone').textContent = o.phone || '-';
         document.getElementById('orderType').textContent = o.order_type === 'دليفري' ? '🛵 دليفري' : '🍽️ صالة';
+        document.getElementById('cashierName').textContent = (res.cashierName || '-') + '';
+        if (o.order_type === 'دليفري' && o.address) {
+          document.getElementById('addressBox').style.display = 'block';
+          document.getElementById('orderAddress').textContent = o.address;
+        }
+        const fee = Number(o.delivery_fee || 0);
+        if (fee > 0) {
+          document.getElementById('feeBox').style.display = 'block';
+          document.getElementById('subtotalAmount').textContent = o.subtotal + ' جنيه';
+          document.getElementById('deliveryFeeAmount').textContent = fee + ' جنيه';
+        }
         document.getElementById('totalAmount').textContent = o.total;
 
         const tbody = document.getElementById('itemsBody');

@@ -76,8 +76,8 @@
     .digital { font-size:14px; font-weight:800; letter-spacing:0.5px; direction:ltr; color:#fff; }
     .today { font-size:9px; color:var(--accent2); margin-top:2px; font-weight:700; white-space:nowrap; }
 
-    .bellies { text-align:center; padding:18px 16px 6px; }
-    .section-title { font-size:16px; font-weight:800; text-align:center; margin-bottom:12px; }
+    .bellies { text-align:center; padding:22px 16px 12px; }
+    .section-title { font-size:16px; font-weight:800; text-align:center; margin:10px 12px 4px; }
 
     /* ===== زر المنيو ===== */
     .menu-cta {
@@ -96,7 +96,7 @@
     }
 
     /* ===== شريط الصور المتحرك ===== */
-    .strip-wrap { overflow:hidden; position:relative; padding:10px 0 4px; }
+    .strip-wrap { overflow:hidden; position:relative; padding:14px 0 10px; }
     .strip {
       display:flex; gap:12px;
       width:max-content;
@@ -118,7 +118,7 @@
     }
 
     /* ===== الأقسام ===== */
-    .section { padding:18px 16px; }
+    .section { padding:24px 16px 12px; }
     .card-box {
       background:var(--surface); border:1px solid var(--border);
       border-radius:var(--radius); padding:16px;

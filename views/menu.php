@@ -61,7 +61,7 @@
     .brand-name { color: #fff; font-size: 14.5px; font-weight: 800; }
     .brand-sub { color: var(--accent2); font-size: 9px; margin-top: 1px; }
 
-    .search-wrap { padding: 10px 14px 4px; }
+    .search-wrap { padding: 12px 14px 8px; }
     .search-box {
       display: flex; align-items: center; gap: 8px;
       background: var(--surface);
@@ -79,13 +79,13 @@
     .cats {
       display: flex;
       gap: 10px;
-      padding: 10px 14px 2px;
+      padding: 12px 14px 8px;
       overflow-x: auto;
     }
     .cats::-webkit-scrollbar{ display:none; }
 
     /* ===== بانر العروض ===== */
-    .offers-banner { padding: 12px 14px 2px; }
+    .offers-banner { padding: 16px 14px 6px; }
     .offers-title {
       display:flex; align-items:center; justify-content:space-between;
       font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px;
@@ -136,8 +136,8 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 8px 12px 16px;
+      gap: 10px;
+      padding: 10px 12px 20px;
     }
     @media (min-width: 420px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 14px 16px; } }
     @media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }

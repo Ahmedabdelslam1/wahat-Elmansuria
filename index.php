@@ -19,7 +19,7 @@ if (isset($_GET['api'])) {
     $data = json_input();
 
     // حماية CSRF لكل الطلبات المغيرة للبيانات (ما عدا الدخول)
-    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'report', 'update_settings'], true)) {
+    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'update_user', 'report', 'update_settings'], true)) {
         $hdr = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!hash_equals($_SESSION['csrf'], (string)$hdr)) {
             json_out(['success' => false, 'message' => 'انتهت الجلسة، أعد تحميل الصفحة']);
@@ -39,6 +39,8 @@ if (isset($_GET['api'])) {
         case 'add_user':            api_add_user($data); break;
         case 'list_users':          api_list_users(); break;
         case 'update_permissions':  api_update_permissions($data); break;
+        case 'update_user':          api_update_user($data); break;
+        case 'public_settings':       api_public_settings(); break;
         case 'report':              api_report($data); break;
         case 'dashboard':           api_dashboard(); break;
         case 'get_settings':        api_get_settings(); break;

@@ -93,6 +93,13 @@
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
     .empty a { color: var(--primary); font-weight: 800; text-decoration: none; }
     .form-section { padding: 0 16px 16px; }
+    .form-section .type-row { display:flex; gap:10px; margin-bottom:10px; }
+    .form-section .type-row button {
+      flex:1; padding:12px; border-radius:12px; border:1px solid var(--border);
+      background: var(--surface); font-family:inherit; font-weight:800; font-size:13.5px; cursor:pointer; color:var(--text);
+    }
+    .form-section .type-row button.active-dinein { background:#e5f0ff; border-color:#007aff; color:#007aff; }
+    .form-section .type-row button.active-delivery { background:#fff3e0; border-color:#ff9500; color:#ef6c00; }
     .form-section input, .form-section textarea {
       width: 100%;
       padding: 12px 14px;
@@ -120,13 +127,19 @@
   <div class="items" id="cartItems"></div>
 
   <div class="form-section" id="orderForm" style="display:none">
+    <div class="type-row">
+      <button id="cartDinein" class="active-dinein" onclick="setCartType('صالة')">🍽️ أكل في المطعم</button>
+      <button id="cartDelivery" onclick="setCartType('دليفري')">🛵 توصيل</button>
+    </div>
     <input type="text" id="customerName" placeholder="الاسم">
     <input type="tel" id="phone" placeholder="رقم الهاتف">
+    <input type="text" id="address" placeholder="📍 عنوان التوصيل" style="display:none">
     <textarea id="notes" rows="2" placeholder="ملاحظات على الطلب (اختياري)"></textarea>
   </div>
 
   <div class="summary" id="summary" style="display:none">
     <div class="summary-row"><span>المجموع الفرعي</span><span id="subtotal">0</span></div>
+    <div class="summary-row" id="deliveryFeeRow" style="display:none"><span>🛵 التوصيل</span><span id="deliveryFeeVal">0 ج.م</span></div>
     <div class="summary-row total"><span>الإجمالي</span><span id="total">0 ج.م</span></div>
     <button class="order-btn" id="orderBtn" onclick="placeOrder()">تأكيد الطلب الآن</button>
   </div>
@@ -135,6 +148,24 @@
 
   <script>
     let cart = JSON.parse(localStorage.getItem('wahat_cart') || '[]');
+    let cartType = 'صالة';
+    let cartDeliveryFee = 0;
+
+    api('public_settings').then(res => {
+      if (res.success && res.settings) {
+        cartDeliveryFee = Number(res.settings.deliveryFee) || 0;
+        render();
+      }
+    }).catch(() => {});
+
+    function setCartType(t) {
+      cartType = t;
+      document.getElementById('cartDinein').className = t === 'صالة' ? 'active-dinein' : '';
+      document.getElementById('cartDelivery').className = t === 'دليفري' ? 'active-delivery' : '';
+      document.getElementById('address').style.display = t === 'دليفري' ? 'block' : 'none';
+      document.getElementById('address').required = t === 'دليفري';
+      render();
+    }
 
     function render() {
       const container = document.getElementById('cartItems');
@@ -185,8 +216,11 @@
       });
 
       const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const fee = cartType === 'دليفري' ? cartDeliveryFee : 0;
       document.getElementById('subtotal').textContent = sub + ' ج.م';
-      document.getElementById('total').textContent = sub + ' ج.م';
+      document.getElementById('deliveryFeeRow').style.display = fee > 0 ? 'flex' : 'none';
+      document.getElementById('deliveryFeeVal').textContent = fee + ' ج.م';
+      document.getElementById('total').textContent = (sub + fee) + ' ج.م';
     }
 
     function changeQty(idx, delta) {
@@ -201,9 +235,14 @@
       const name = document.getElementById('customerName').value.trim();
       const phone = document.getElementById('phone').value.trim();
       const notes = document.getElementById('notes').value.trim();
+      const address = document.getElementById('address').value.trim();
 
       if (!name || !phone) {
         alert('يرجى إدخال الاسم ورقم الهاتف');
+        return;
+      }
+      if (cartType === 'دليفري' && !address) {
+        alert('يرجى إدخال عنوان التوصيل');
         return;
       }
 
@@ -215,7 +254,9 @@
           items: cart,
           customerName: name,
           phone: phone,
-          notes: notes
+          notes: notes,
+          address: address,
+          orderType: cartType
         });
         btn.disabled = false;
         if (res.success) {
