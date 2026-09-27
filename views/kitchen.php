@@ -18,24 +18,31 @@
     body { font-family:'Tajawal','Segoe UI',Tahoma,sans-serif; background:var(--bg); color:var(--text); padding-bottom:20px; }
     .header {
       background: linear-gradient(135deg, #15151f, #23233a);
-      padding: 14px 18px;
+      padding: 12px 16px;
       display: flex; justify-content: space-between; align-items: center;
       position: sticky; top: 0; z-index: 50;
       border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap:8px;
     }
-    .header h1 { font-size: 18px; font-weight: 800; }
-    .header .user { font-size: 11.5px; color: var(--accent2); }
-    .logout {
+    .header h1 { font-size: 17px; font-weight: 800; }
+    .header .user { font-size: 11px; color: var(--accent2); }
+    .logout, .sound-btn {
       background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff;
-      padding: 7px 14px; border-radius: 10px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight:700;
+      padding: 7px 13px; border-radius: 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; font-weight:700;
     }
-    .clock { font-size: 13px; color: var(--muted); font-weight: 700; direction: ltr; }
+    .sound-btn.on { background:#34c759; border-color:#34c759; color:#05220f; }
+    .clock { font-size: 12.5px; color: var(--muted); font-weight: 700; direction: ltr; }
+
+    .stats-bar { display:flex; gap:10px; padding:10px 14px; overflow-x:auto; }
+    .stat-chip { flex-shrink:0; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 16px; text-align:center; min-width:100px; }
+    .stat-chip b { display:block; font-size:16px; font-weight:800; }
+    .stat-chip span { font-size:10px; color:var(--muted); font-weight:700; }
 
     .board {
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
-      padding: 14px;
+      padding: 6px 14px 14px;
     }
     @media (min-width: 760px) { .board { grid-template-columns: 1fr 1fr 1fr; } }
 
@@ -62,9 +69,12 @@
     .col.prep .ticket { border-right: 5px solid var(--prep); }
     .col.ready .ticket { border-right: 5px solid var(--ready); }
 
-    .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; }
+    .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; flex-wrap:wrap; gap:6px; }
     .ticket .oid { font-weight: 800; font-size: 15px; }
     .ticket .time { font-size: 11px; color: var(--muted); }
+    .type-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
+    .type-tag.dinein { background:#0d2a4a; color:#5ab0ff; }
+    .type-tag.delivery { background:#3a2600; color:#ffb020; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -93,10 +103,18 @@
       <h1>👨‍🍳 شاشة المطبخ</h1>
       <div class="user"><?= e($user['name']) ?></div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div class="clock" id="clock">--:--:--</div>
+      <button class="sound-btn" id="soundBtn" onclick="enableSound()">🔔 تفعيل التنبيه</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-chip"><b id="stNew" style="color:var(--new)">0</b><span>جديد</span></div>
+    <div class="stat-chip"><b id="stPrep" style="color:var(--prep)">0</b><span>قيد التحضير</span></div>
+    <div class="stat-chip"><b id="stReady" style="color:var(--ready)">0</b><span>جاهز</span></div>
+    <div class="stat-chip"><b id="stDoneToday" style="color:#5ab0ff">0</b><span>تم تسليمه اليوم</span></div>
   </div>
 
   <div class="board">
@@ -115,6 +133,38 @@
   </div>
 
   <script>
+    let knownNewIds = new Set();
+    let soundEnabled = false;
+    let audioCtx = null;
+
+    function enableSound() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        soundEnabled = true;
+        const btn = document.getElementById('soundBtn');
+        btn.textContent = '🔔 التنبيه مُفعّل';
+        btn.classList.add('on');
+      } catch (e) {}
+    }
+    function playSiren() {
+      if (!soundEnabled || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 3; i++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        const t0 = now + i * 0.6;
+        osc.frequency.setValueAtTime(600, t0);
+        osc.frequency.linearRampToValueAtTime(1000, t0 + 0.3);
+        osc.frequency.linearRampToValueAtTime(600, t0 + 0.6);
+        gain.gain.setValueAtTime(0.001, t0);
+        gain.gain.linearRampToValueAtTime(0.28, t0 + 0.05);
+        gain.gain.linearRampToValueAtTime(0.001, t0 + 0.58);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t0); osc.stop(t0 + 0.6);
+      }
+    }
+
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -125,14 +175,22 @@
       const p = dt.split(' ')[1] || dt;
       return p.slice(0, 5);
     }
+    function todayStr() {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    }
 
     function ticketHtml(o, nextLabel, nextStatus, btnClass) {
       const items = (o.items || []).map(i =>
         `<li><span>${esc(i.name)}</span><span class="qty">× ${esc(i.qty)}</span></li>`
       ).join('');
+      const isDelivery = o.order_type === 'دليفري';
       return `
         <div class="ticket">
-          <div class="top"><span class="oid">${esc(o.order_id.replace('ORD-',''))}</span><span class="time">${timeOnly(o.created_at)}</span></div>
+          <div class="top">
+            <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
+            <span class="type-tag ${isDelivery ? 'delivery' : 'dinein'}">${isDelivery ? '🛵 دليفري' : '🍽️ صالة'}</span>
+            <span class="time">${timeOnly(o.created_at)}</span>
+          </div>
           <ul>${items}</ul>
           ${o.notes ? '<div class="notes">📝 ' + esc(o.notes) + '</div>' : ''}
           ${nextLabel ? `<button class="${btnClass}" onclick="updateStatus('${esc(o.order_id)}', '${nextStatus}')">${nextLabel}</button>` : ''}
@@ -151,10 +209,25 @@
         const news = orders.filter(o => o.status === 'جديد');
         const preps = orders.filter(o => o.status === 'قيد التحضير');
         const readys = orders.filter(o => o.status === 'جاهز');
+        const today = todayStr();
+        const doneToday = orders.filter(o => o.status === 'تم التسليم' && (o.created_at || '').slice(0, 10) === today);
+
+        // تنبيه صوتي عند وصول طلب جديد
+        const ids = new Set(news.map(o => o.order_id));
+        if (knownNewIds.size > 0) {
+          let hasNew = false;
+          ids.forEach(id => { if (!knownNewIds.has(id)) hasNew = true; });
+          if (hasNew) playSiren();
+        }
+        knownNewIds = ids;
 
         document.getElementById('cNew').textContent = news.length;
         document.getElementById('cPrep').textContent = preps.length;
         document.getElementById('cReady').textContent = readys.length;
+        document.getElementById('stNew').textContent = news.length;
+        document.getElementById('stPrep').textContent = preps.length;
+        document.getElementById('stReady').textContent = readys.length;
+        document.getElementById('stDoneToday').textContent = doneToday.length;
 
         document.getElementById('listNew').innerHTML = news.length
           ? news.map(o => ticketHtml(o, 'بدء التحضير', 'قيد التحضير', 'btn-prep')).join('')

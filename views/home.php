@@ -42,38 +42,41 @@
     }
     .icon-btn:hover .tip { opacity:1; }
 
-    /* ===== البطل + الساعة ===== */
+    /* ===== البطل: الشعار + الساعة على الجانب الأيمن ===== */
     .hero {
       background: radial-gradient(circle at 50% -20%, #2d2d44 0%, var(--dark) 60%);
-      padding: 28px 16px 90px;
-      text-align:center;
+      padding: 20px 16px 26px;
       position:relative;
     }
-    .hero .logo-circle {
-      width:66px; height:66px; border-radius:50%; margin:0 auto 12px;
-      background:linear-gradient(135deg,var(--primary),var(--accent2));
-      display:flex; align-items:center; justify-content:center; font-size:30px;
-      box-shadow:0 10px 26px -6px rgba(255,59,48,0.6);
+    .hero-top {
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      flex-wrap:wrap;
     }
-    .hero h1 { color:#fff; font-size:24px; font-weight:800; }
-    .hero .sub { color:var(--accent2); font-size:13px; margin-top:2px; }
+    .brand-block { display:flex; align-items:center; gap:12px; text-align:right; }
+    .logo-img {
+      width:74px; height:74px; border-radius:22px; flex-shrink:0;
+      box-shadow:0 10px 28px -6px rgba(255,59,48,0.65), 0 0 0 3px rgba(255,255,255,0.08);
+      background:linear-gradient(135deg,#22223a,#15151f);
+      object-fit:cover;
+    }
+    .hero h1 { color:#fff; font-size:21px; font-weight:800; line-height:1.25; }
+    .hero .sub { color:var(--accent2); font-size:12px; margin-top:3px; font-weight:700; }
 
-    .clock-card {
-      position:absolute; bottom:-70px; left:50%; transform:translateX(-50%);
-      background:var(--surface);
-      border-radius:22px;
-      padding:14px 22px 16px;
-      box-shadow:0 18px 40px -10px rgba(0,0,0,0.28);
-      width:min(320px, calc(100% - 32px));
+    .clock-pill {
+      background:rgba(255,255,255,0.07);
+      border:1px solid rgba(255,255,255,0.14);
+      border-radius:18px;
+      padding:8px 14px 10px;
       text-align:center;
-      border:1px solid var(--border);
+      flex-shrink:0;
+      backdrop-filter:blur(3px);
     }
-    .analog { width:110px; height:110px; margin:0 auto 8px; position:relative; }
+    .analog { width:54px; height:54px; margin:0 auto 4px; position:relative; }
     .analog svg { width:100%; height:100%; }
-    .digital { font-size:22px; font-weight:800; letter-spacing:1px; direction:ltr; }
-    .today { font-size:12px; color:var(--muted); margin-top:2px; font-weight:700; }
+    .digital { font-size:14px; font-weight:800; letter-spacing:0.5px; direction:ltr; color:#fff; }
+    .today { font-size:9px; color:var(--accent2); margin-top:2px; font-weight:700; white-space:nowrap; }
 
-    .bellies { text-align:center; padding:86px 16px 6px; }
+    .bellies { text-align:center; padding:18px 16px 6px; }
     .section-title { font-size:16px; font-weight:800; text-align:center; margin-bottom:12px; }
 
     /* ===== زر المنيو ===== */
@@ -173,34 +176,31 @@
   </div>
 
   <div class="hero">
-    <div class="logo-circle">🌴</div>
-    <h1><?= e(APP_NAME) ?></h1>
-    <div class="sub">أصل المندي والمشوي • المنصورية</div>
-
-    <div class="clock-card">
-      <div class="analog">
-        <svg viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="48" fill="#15151f"/>
-          <circle cx="50" cy="50" r="48" fill="none" stroke="#ececf2" stroke-width="2"/>
-          <g fill="#cfcfe0" font-size="9" font-family="Tajawal" font-weight="700" text-anchor="middle">
-            <text x="50" y="16">١٢</text>
-            <text x="86" y="53">٣</text>
-            <text x="50" y="90">٦</text>
-            <text x="14" y="53">٩</text>
-          </g>
-          <g stroke="#5a5a70" stroke-width="1.4">
-            <line x1="50" y1="50" x2="50" y2="10" transform="rotate(30 50 50)" opacity="0"/>
-          </g>
-          <g id="ticks"></g>
-          <line id="hourHand" x1="50" y1="50" x2="50" y2="29" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
-          <line id="minuteHand" x1="50" y1="50" x2="50" y2="19" stroke="#cfcfe0" stroke-width="2.6" stroke-linecap="round"/>
-          <line id="secondHand" x1="50" y1="54" x2="50" y2="17" stroke="#ff3b30" stroke-width="1.4" stroke-linecap="round"/>
-          <circle cx="50" cy="50" r="3" fill="#ff3b30"/>
-          <circle cx="50" cy="50" r="1.4" fill="#fff"/>
-        </svg>
+    <div class="hero-top">
+      <div class="brand-block">
+        <img class="logo-img" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
+        <div>
+          <h1><?= e(APP_NAME) ?></h1>
+          <div class="sub">أصل المندي والمشوي • المنصورية</div>
+        </div>
       </div>
-      <div class="digital" id="digital">--:--:--</div>
-      <div class="today" id="todayDate">جاري تحميل التاريخ...</div>
+
+      <div class="clock-pill">
+        <div class="analog">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="48" fill="#15151f"/>
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#ececf2" stroke-width="2"/>
+            <g id="ticks"></g>
+            <line id="hourHand" x1="50" y1="50" x2="50" y2="29" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+            <line id="minuteHand" x1="50" y1="50" x2="50" y2="19" stroke="#cfcfe0" stroke-width="3.2" stroke-linecap="round"/>
+            <line id="secondHand" x1="50" y1="54" x2="50" y2="17" stroke="#ff3b30" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="50" cy="50" r="4" fill="#ff3b30"/>
+            <circle cx="50" cy="50" r="1.8" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="digital" id="digital">--:--:--</div>
+        <div class="today" id="todayDate">جاري التحميل...</div>
+      </div>
     </div>
   </div>
 

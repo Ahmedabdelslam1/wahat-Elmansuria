@@ -101,6 +101,7 @@ function init_db(PDO $db) {
                 items_json MEDIUMTEXT NOT NULL,
                 total DECIMAL(12,2) NOT NULL DEFAULT 0,
                 status VARCHAR(30) NOT NULL DEFAULT 'جديد',
+                order_type VARCHAR(20) NOT NULL DEFAULT 'صالة',
                 notes VARCHAR(1000) DEFAULT '',
                 created_by VARCHAR(100) DEFAULT 'guest',
                 INDEX idx_orders_created (created_at),
@@ -116,6 +117,9 @@ function init_db(PDO $db) {
         }
         if (!column_exists($db, 'menu', 'image')) {
             $db->exec("ALTER TABLE menu ADD COLUMN image VARCHAR(500) DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'order_type')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN order_type VARCHAR(20) NOT NULL DEFAULT 'صالة'");
         }
     } else {
         $db->exec("
@@ -148,6 +152,7 @@ function init_db(PDO $db) {
                 items_json TEXT NOT NULL DEFAULT '[]',
                 total REAL NOT NULL DEFAULT 0,
                 status TEXT NOT NULL DEFAULT 'جديد',
+                order_type TEXT NOT NULL DEFAULT 'صالة',
                 notes TEXT DEFAULT '',
                 created_by TEXT DEFAULT 'guest'
             );
@@ -163,6 +168,9 @@ function init_db(PDO $db) {
         }
         if (!column_exists($db, 'menu', 'image')) {
             $db->exec("ALTER TABLE menu ADD COLUMN image TEXT DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'order_type')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT 'صالة'");
         }
     }
 
@@ -192,12 +200,58 @@ function init_db(PDO $db) {
         'telegramBotToken' => '',
         'telegramChatId' => '',
         'whatsappNumber' => '201153431728',
+        'whatsappToken' => '',
+        'whatsappPhoneId' => '',
     ];
     $st = $db->prepare('INSERT INTO settings (`key`, `value`) VALUES (?, ?)');
     foreach ($defaults as $k => $v) {
         $exists = db_scalar($db, 'SELECT COUNT(*) FROM settings WHERE `key` = ?', [$k]);
         if (!$exists) $st->execute([$k, $v]);
     }
+
+    migrate_offers_v2($db);
+}
+
+/** ترحيل لمرة واحدة: توحيد قسم "صواني الواحة والعروض الخاصة" القديم إلى قسم "العروض" الرسمي الجديد */
+function migrate_offers_v2(PDO $db) {
+    if (get_setting_raw($db, 'offers_v2_migrated') === '1') return;
+    $db->exec("DELETE FROM menu WHERE category = 'صواني الواحة والعروض الخاصة'");
+    $offers = [
+        ['صينية السفرة: نصف فرخة + نصف كفتة + أرز', 450, ''],
+        ['صينية الأكل: نصف فرخة + ربع طرب + أرز', 350, ''],
+        ['صينية العيلة: فرخة مشوية + نصف فرخة + أرز', 600, ''],
+        ['صينية الشلة: كيلو كفتة + نصف فرخة + أرز', 650, ''],
+        ['صينية الأصحاب: فرختين + نصف فرخة + أرز', 1000, ''],
+        ['صينية العمدة: فرخة + كيلو كفتة طرب + أرز', 1500, ''],
+        ['صينية الكبير: ثمن جدي + كيلو كفتة + صينية أرز', 1300, ''],
+        ['صينية المعلم: ربع جدي + فرخة + كيلو كفتة + أرز', 2650, ''],
+        ['صينية 1: نصف كفتة + نصف فرخة طرب + صينية أرز', 850, ''],
+        ['صينية 2: نصف كفتة + نصف فرخة طرب + صينية أرز', 800, ''],
+        ['صينية 3: كيلو كفتة + نصف فرخة معمر + صينية أرز', 1000, ''],
+        ['صينية 4: كيلو كفتة + نصف فرخة معمر + صينية أرز', 1050, ''],
+        ['صينية الملوك: ربع جدي + كيلو كفتة + معمر + ورق عنب', 2600, ''],
+        ['صينية الوليمة: بطة + جوز حمام + طاجن معمر + ورق عنب', 1750, ''],
+        ['العرض الخاص: ربع جدي + نصف كفتة + نصف طرب + ربع معمر + صينية أرز', 2750, '🔥 عرض لا يُفوّت'],
+    ];
+    $st = $db->prepare('INSERT INTO menu (name, category, price, descr, active, image) VALUES (?, ?, ?, ?, 1, ?)');
+    foreach ($offers as $o) {
+        $st->execute([$o[0], 'العروض', $o[1], $o[2], category_image('العروض')]);
+    }
+    $up = $db->prepare('INSERT INTO settings (`key`, `value`) VALUES (?, ?)');
+    $exists = db_scalar($db, "SELECT COUNT(*) FROM settings WHERE `key` = 'offers_v2_migrated'");
+    if ($exists) {
+        $db->prepare("UPDATE settings SET `value` = '1' WHERE `key` = 'offers_v2_migrated'")->execute();
+    } else {
+        $up->execute(['offers_v2_migrated', '1']);
+    }
+}
+
+/** قراءة إعداد مباشرة من اتصال قاعدة بيانات معين (تُستخدم أثناء init_db قبل جهوزية db()) */
+function get_setting_raw(PDO $db, $key) {
+    $st = $db->prepare('SELECT `value` FROM settings WHERE `key` = ?');
+    $st->execute([$key]);
+    $v = $st->fetchColumn();
+    return $v === false ? '' : (string)$v;
 }
 
 /** صورة تمثيلية لكل قسم (صور حقيقية مولّدة لأصناف المطعم) */
@@ -205,7 +259,7 @@ function category_image($cat) {
     $map = [
         'المطبخ والطواجن' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/874539e25_generated_image.png',
         'وجبات فردية وميكسات' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/a47e4af67_generated_image.png',
-        'صواني الواحة والعروض الخاصة' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/1bea8941c_generated_image.png',
+        'العروض' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/1bea8941c_generated_image.png',
         'دجاج ولحم مندي وكبسة وبرياني' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/de636673c_generated_image.png',
         'المشويات بالكيلو' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/c1aebe49f_generated_image.png',
         'ساندوتشات وسلطات' => 'https://media.base44.com/images/public/69f55aeb618a96592fa36b04/bac04e273_generated_image.png',
@@ -252,23 +306,6 @@ function seed_menu_items(PDO $db) {
         ['نصف فرخة + نصف كباب + أرز', 'وجبات فردية وميكسات', 300],
         ['فرد سمان + أرز', 'وجبات فردية وميكسات', 125],
         ['مكرونة مبكبكة (وجبة)', 'وجبات فردية وميكسات', 250],
-
-        // صواني الواحة والعروض الخاصة
-        ['صينية السفرة: نصف فرخة + نصف كفتة + أرز', 'صواني الواحة والعروض الخاصة', 450],
-        ['صينية الأكل: نصف فرخة + ربع طرب + أرز', 'صواني الواحة والعروض الخاصة', 350],
-        ['صينية العيلة: فرخة مشوية + نصف فرخة + أرز', 'صواني الواحة والعروض الخاصة', 600],
-        ['صينية الشلة: كيلو كفتة + نصف فرخة + أرز', 'صواني الواحة والعروض الخاصة', 650],
-        ['صينية الأصحاب: فرختين + نصف فرخة + أرز', 'صواني الواحة والعروض الخاصة', 1000],
-        ['صينية الكبير: ثمن جدي + كيلو كفتة + صينية أرز', 'صواني الواحة والعروض الخاصة', 1300],
-        ['صينية المعلم: فرخة + كيلو كفتة طرب + أرز', 'صواني الواحة والعروض الخاصة', 1500],
-        ['صينية المعلم الكبرى: ربع جدي + فرخة + كيلو كفتة + أرز', 'صواني الواحة والعروض الخاصة', 2650],
-        ['صينية 1: نصف كفتة + نصف فرخة طرب + صينية أرز', 'صواني الواحة والعروض الخاصة', 850],
-        ['صينية 2: نصف كفتة + نصف فرخة طرب + صينية أرز', 'صواني الواحة والعروض الخاصة', 800],
-        ['صينية 3: كيلو كفتة + نصف فرخة معمر + صينية أرز', 'صواني الواحة والعروض الخاصة', 1000],
-        ['صينية 4: كيلو كفتة + نصف فرخة معمر + صينية أرز', 'صواني الواحة والعروض الخاصة', 1050],
-        ['صينية المولد: ربع جدي + كيلو كفتة + معمر + ورق عنب', 'صواني الواحة والعروض الخاصة', 2600],
-        ['صينية الوليمة: بطة + جوز حمام + طاجن معمر + ورق عنب', 'صواني الواحة والعروض الخاصة', 1750],
-        ['العرض الخاص: ربع جدي + نصف كفتة + نصف طرب + ربع معمر + صينية أرز', 'صواني الواحة والعروض الخاصة', 2750],
 
         // دجاج ولحم مندي وكبسة وبرياني
         ['ربع فرخة مندي + أرز', 'دجاج ولحم مندي وكبسة وبرياني', 80],
@@ -469,8 +506,10 @@ function api_place_order($data) {
     $customerName = trim((string)($data['customerName'] ?? '')) ?: ($user ? $user['name'] : 'ضيف');
     $phone = trim((string)($data['phone'] ?? ''));
     $notes = trim((string)($data['notes'] ?? ''));
+    $orderType = (string)($data['orderType'] ?? 'صالة');
+    if (!in_array($orderType, ['صالة', 'دليفري'], true)) $orderType = 'صالة';
 
-    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $orderId,
         date('Y-m-d H:i:s'),
@@ -479,11 +518,13 @@ function api_place_order($data) {
         json_encode($items, JSON_UNESCAPED_UNICODE),
         $total,
         'جديد',
+        $orderType,
         $notes,
         $user ? $user['username'] : 'guest',
     ]);
 
-    send_order_notification($orderId, $customerName, $phone, $notes, $items, $total);
+    send_order_notification($orderId, $customerName, $phone, $notes, $items, $total, $orderType);
+    if ($phone) send_whatsapp_message($phone, whatsapp_order_message($orderId, $customerName, $items, $total, 'جديد', $orderType));
 
     json_out(['success' => true, 'orderId' => $orderId, 'total' => $total, 'message' => 'تم استلام طلبك بنجاح! رقم الطلب: ' . $orderId]);
 }
@@ -520,7 +561,16 @@ function api_update_status($data) {
     if (!in_array($status, $allowed, true)) json_out(['success' => false, 'message' => 'حالة غير صحيحة']);
     $stmt = $db->prepare('UPDATE orders SET status = ? WHERE order_id = ?');
     $stmt->execute([$status, $orderId]);
-    if ((int)$stmt->rowCount()) json_out(['success' => true, 'message' => 'تم تحديث الحالة']);
+    if ((int)$stmt->rowCount()) {
+        $ord = $db->prepare('SELECT * FROM orders WHERE order_id = ?');
+        $ord->execute([$orderId]);
+        $o = $ord->fetch();
+        if ($o && !empty($o['phone'])) {
+            $items = json_decode($o['items_json'], true) ?: [];
+            send_whatsapp_message($o['phone'], whatsapp_order_message($orderId, $o['customer_name'], $items, (float)$o['total'], $status, $o['order_type'] ?? 'صالة'));
+        }
+        json_out(['success' => true, 'message' => 'تم تحديث الحالة']);
+    }
     json_out(['success' => false, 'message' => 'الطلب غير موجود']);
 }
 
@@ -608,6 +658,31 @@ function api_update_permissions($data) {
     $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?');
     $stmt->execute($params);
     json_out(['success' => true, 'message' => 'تم تحديث صلاحيات المستخدم']);
+}
+
+function api_get_settings() {
+    require_role(['admin']);
+    $db = db();
+    $keys = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId'];
+    $out = [];
+    foreach ($keys as $k) $out[$k] = get_setting($k, '');
+    json_out(['success' => true, 'settings' => $out]);
+}
+
+function api_update_settings($data) {
+    require_role(['admin']);
+    $db = db();
+    $allowed = ['restaurantName','phone','address','adminEmail','telegramBotToken','telegramChatId','whatsappNumber','whatsappToken','whatsappPhoneId'];
+    $st = $db->prepare('UPDATE settings SET `value` = ? WHERE `key` = ?');
+    $ins = $db->prepare('INSERT INTO settings (`key`, `value`) VALUES (?, ?)');
+    foreach ($allowed as $k) {
+        if (!array_key_exists($k, $data)) continue;
+        $v = trim((string)$data[$k]);
+        $exists = db_scalar($db, 'SELECT COUNT(*) FROM settings WHERE `key` = ?', [$k]);
+        if ($exists) $st->execute([$v, $k]);
+        else $ins->execute([$k, $v]);
+    }
+    json_out(['success' => true, 'message' => 'تم حفظ الإعدادات']);
 }
 
 function api_report($data) {
@@ -726,7 +801,7 @@ function api_get_invoice($data) {
 }
 
 // ===================== NOTIFICATIONS =====================
-function send_order_notification($orderId, $customerName, $phone, $notes, $items, $total) {
+function send_order_notification($orderId, $customerName, $phone, $notes, $items, $total, $orderType = 'صالة') {
     $lines = [];
     foreach ($items as $i) $lines[] = "• {$i['name']} × {$i['qty']}";
     $itemsTxt = implode("\n", $lines);
@@ -735,7 +810,7 @@ function send_order_notification($orderId, $customerName, $phone, $notes, $items
     $token = get_setting('telegramBotToken');
     $chatId = get_setting('telegramChatId');
     if ($token && $chatId && function_exists('curl_init')) {
-        $msg = "🔔 <b>طلب جديد - " . APP_NAME . "</b>\n\n" .
+        $msg = "🔔 <b>طلب جديد (" . e($orderType) . ") - " . APP_NAME . "</b>\n\n" .
                "📋 رقم الطلب: <code>{$orderId}</code>\n" .
                "👤 العميل: {$customerName}\n" .
                "📞 الهاتف: " . ($phone ?: '-') . "\n" .
@@ -752,4 +827,58 @@ function send_order_notification($orderId, $customerName, $phone, $notes, $items
         curl_exec($ch);
         curl_close($ch);
     }
+}
+
+/** نص رسالة واتساب لتحديث حالة الطلب أو تأكيد استلامه */
+function whatsapp_order_message($orderId, $customerName, $items, $total, $status, $orderType = 'صالة') {
+    $lines = [];
+    foreach ($items as $i) $lines[] = "• {$i['name']} × {$i['qty']}";
+    $itemsTxt = implode("\n", $lines);
+    $statusEmoji = [
+        'جديد' => '🆕', 'قيد التحضير' => '👨‍🍳', 'جاهز' => '✅', 'تم التسليم' => '🎉',
+    ][$status] ?? '📦';
+    $typeTxt = $orderType === 'دليفري' ? '🛵 دليفري' : '🍽️ صالة';
+    return "{$statusEmoji} " . APP_NAME . "\n" .
+           "رقم الطلب: {$orderId}\n" .
+           "مرحبًا {$customerName}، حالة طلبك الآن: *{$status}*\n" .
+           "نوع الطلب: {$typeTxt}\n\n" .
+           "الأصناف:\n{$itemsTxt}\n\n" .
+           "الإجمالي: {$total} جنيه\n" .
+           "شكرًا لطلبك من " . APP_NAME . " 🌴";
+}
+
+/**
+ * إرسال رسالة واتساب تلقائيًا عبر WhatsApp Cloud API الرسمي من ميتا (بدون فتح أي رابط أو تدخل يدوي).
+ * يتطلب توكن ورقم من WhatsApp Business Platform (Meta for Developers) يتم إدخالهما من لوحة المدير → الإعدادات.
+ * لو لم يتم إدخال البيانات، لا تُرسل أي رسالة (بدون كسر باقي النظام).
+ */
+function send_whatsapp_message($phone, $text) {
+    $token = get_setting('whatsappToken');
+    $phoneId = get_setting('whatsappPhoneId');
+    if (!$token || !$phoneId || !$phone || !function_exists('curl_init')) return false;
+
+    // تطبيع الرقم لصيغة دولية بدون + أو أصفار بداية (مصر: يبدأ ب 20)
+    $clean = preg_replace('/[^0-9]/', '', $phone);
+    if (substr($clean, 0, 1) === '0') $clean = '2' . $clean; // 01xxxxxxxxx -> 201xxxxxxxxx
+    elseif (substr($clean, 0, 2) !== '20') $clean = '20' . $clean;
+
+    $ch = curl_init("https://graph.facebook.com/v20.0/{$phoneId}/messages");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode([
+            'messaging_product' => 'whatsapp',
+            'to' => $clean,
+            'type' => 'text',
+            'text' => ['body' => $text],
+        ], JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $token,
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+    return true;
 }

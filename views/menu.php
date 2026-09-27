@@ -83,19 +83,53 @@
       overflow-x: auto;
     }
     .cats::-webkit-scrollbar{ display:none; }
-    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 48px; }
+
+    /* ===== بانر العروض ===== */
+    .offers-banner { padding: 12px 14px 2px; }
+    .offers-title {
+      display:flex; align-items:center; justify-content:space-between;
+      font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px;
+    }
+    .offers-badge {
+      font-size: 9px; font-weight: 800; color: #fff;
+      background: linear-gradient(90deg,var(--primary),var(--accent2));
+      padding: 3px 9px; border-radius: 12px;
+    }
+    .offers-strip { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+    .offers-strip::-webkit-scrollbar{ display:none; }
+    .offer-card {
+      flex-shrink:0; width: 140px;
+      background: linear-gradient(160deg, #1c1414, #2a1a10);
+      border-radius: 14px; overflow:hidden;
+      border: 1.5px solid #ffb020;
+      box-shadow: 0 0 0 1px rgba(255,176,32,0.15), 0 8px 22px -8px rgba(255,59,48,0.45);
+      position: relative;
+      animation: offerGlow 2.4s ease-in-out infinite;
+    }
+    @keyframes offerGlow {
+      0%,100% { box-shadow: 0 0 0 1px rgba(255,176,32,0.15), 0 8px 22px -8px rgba(255,59,48,0.45); }
+      50% { box-shadow: 0 0 0 2px rgba(255,176,32,0.5), 0 10px 28px -6px rgba(255,59,48,0.7); }
+    }
+    .offer-card .oth { aspect-ratio: 1.3/1; overflow:hidden; }
+    .offer-card .oth img { width:100%; height:100%; object-fit:cover; display:block; }
+    .offer-card .ob { padding: 7px 8px 9px; }
+    .offer-card h4 { font-size: 10.5px; font-weight: 800; color: #fff; line-height:1.3; min-height: 27px; margin-bottom:5px; }
+    .offer-card .orow { display:flex; align-items:center; justify-content:space-between; }
+    .offer-card .oprice { font-size: 12px; font-weight: 800; color: #ffb020; }
+    .offer-card .oadd { border:none; background: linear-gradient(90deg,var(--primary),var(--primary-dark)); color:#fff; font-weight:800; font-size:9.5px; padding:4px 8px; border-radius:7px; cursor:pointer; }
+    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 40px; }
     .cat-circle {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 32px; height: 32px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      margin: 0 auto 4px;
+      font-size: 14px;
+      margin: 0 auto 3px;
       border: 2px solid transparent;
       transition: transform .15s;
       overflow: hidden;
     }
     .cat-circle img { width: 100%; height: 100%; object-fit: cover; }
     .cat-item.active .cat-circle { border-color: var(--primary); transform: scale(1.1); box-shadow: 0 4px 14px -3px rgba(255,59,48,0.5); }
-    .cat-label { font-size: 9px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .cat-label { font-size: 8px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .cat-item.active .cat-label { color: var(--text); }
 
     /* ===== كروت صغيرة مضيئة، 3 أعمدة على الموبايل ===== */
@@ -192,6 +226,11 @@
     </div>
   </div>
 
+  <div class="offers-banner" id="offersBanner" style="display:none">
+    <div class="offers-title"><span>🔥 عروض واحة المنصورية</span><span class="offers-badge">عرض لفترة محدودة</span></div>
+    <div class="offers-strip" id="offersStrip"></div>
+  </div>
+
   <div class="cats" id="categories"></div>
   <div class="grid" id="itemsList"></div>
 
@@ -259,10 +298,30 @@
         allItems.forEach(i => { if (!catImages[i.category]) catImages[i.category] = i.image; });
         renderCategories();
         renderItems();
+        renderOffers();
         updateCartUI();
       } catch (e) {
         document.getElementById('itemsList').innerHTML = '<div class="empty-state">خطأ في تحميل المنيو</div>';
       }
+    }
+
+    function renderOffers() {
+      const offers = allItems.filter(i => i.category === 'العروض');
+      const banner = document.getElementById('offersBanner');
+      if (!offers.length) { banner.style.display = 'none'; return; }
+      banner.style.display = 'block';
+      document.getElementById('offersStrip').innerHTML = offers.map(i => `
+        <div class="offer-card">
+          <div class="oth"><img src="${i.image}" alt="${i.name.replace(/"/g,'&quot;')}" loading="lazy"></div>
+          <div class="ob">
+            <h4>${i.name}</h4>
+            <div class="orow">
+              <span class="oprice">${i.price} ج.م</span>
+              <button class="oadd" onclick='addToCart(${JSON.stringify(i)}, this)'>+ أضف</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
     }
 
     function renderCategories() {

@@ -95,6 +95,7 @@
     <button class="tab" onclick="showPanel('users', this)">👥 المستخدمين</button>
     <button class="tab" onclick="showPanel('orders', this)">📋 الطلبات</button>
     <button class="tab" onclick="showPanel('reports', this)">📈 التقارير</button>
+    <button class="tab" onclick="showPanel('settings', this)">⚙️ الإعدادات</button>
   </div>
 
   <!-- Dashboard -->
@@ -198,6 +199,33 @@
     <div id="reportResult"></div>
   </div>
 
+  <!-- الإعدادات -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <h3>بيانات المطعم</h3>
+      <div class="form-row"><label>اسم المطعم</label><input id="setRestaurantName"></div>
+      <div class="form-row"><label>رقم الهاتف</label><input id="setPhone"></div>
+      <div class="form-row"><label>العنوان</label><input id="setAddress"></div>
+    </div>
+    <div class="card">
+      <h3>تنبيهات تليجرام (اختياري)</h3>
+      <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">لاستقبال إشعار فوري بكل طلب جديد على تليجرام</p>
+      <div class="form-row"><label>Bot Token</label><input id="setTelegramToken" placeholder="123456:ABC-..."></div>
+      <div class="form-row"><label>Chat ID</label><input id="setTelegramChat" placeholder="مثل 123456789"></div>
+    </div>
+    <div class="card">
+      <h3>واتساب تلقائي للعميل (WhatsApp Cloud API)</h3>
+      <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
+        لإرسال تأكيد الطلب وتحديثات الحالة تلقائيًا لواتساب العميل <strong>بدون فتح أي رابط أو تدخل يدوي</strong>،
+        يجب أن يكون لديك حساب <strong>WhatsApp Business Platform</strong> من Meta for Developers (رقم مُعتمد + Access Token).
+        رقم واتساب شخصي عادي لا يدعم الإرسال الآلي. بدون هذه البيانات لن يتم إرسال أي رسائل تلقائية (باقي النظام يعمل بشكل طبيعي).
+      </p>
+      <div class="form-row"><label>Phone Number ID</label><input id="setWaPhoneId" placeholder="من Meta for Developers"></div>
+      <div class="form-row"><label>Access Token</label><input id="setWaToken" placeholder="Permanent/System User Token"></div>
+    </div>
+    <button class="primary" id="saveSettingsBtn" onclick="saveSettings()">حفظ الإعدادات</button>
+  </div>
+
   <script>
     function esc(s) {
       return String(s == null ? '' : s)
@@ -221,6 +249,41 @@
         document.getElementById('reportDate').valueAsDate = new Date();
         loadDailyReport();
       }
+      if (id === 'settings') loadSettings();
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await api('get_settings');
+        if (!res.success) return;
+        const s = res.settings;
+        document.getElementById('setRestaurantName').value = s.restaurantName || '';
+        document.getElementById('setPhone').value = s.phone || '';
+        document.getElementById('setAddress').value = s.address || '';
+        document.getElementById('setTelegramToken').value = s.telegramBotToken || '';
+        document.getElementById('setTelegramChat').value = s.telegramChatId || '';
+        document.getElementById('setWaPhoneId').value = s.whatsappPhoneId || '';
+        document.getElementById('setWaToken').value = s.whatsappToken || '';
+      } catch (e) {}
+    }
+
+    async function saveSettings() {
+      const btn = document.getElementById('saveSettingsBtn');
+      btn.disabled = true;
+      try {
+        const res = await api('update_settings', {
+          restaurantName: document.getElementById('setRestaurantName').value.trim(),
+          phone: document.getElementById('setPhone').value.trim(),
+          address: document.getElementById('setAddress').value.trim(),
+          telegramBotToken: document.getElementById('setTelegramToken').value.trim(),
+          telegramChatId: document.getElementById('setTelegramChat').value.trim(),
+          whatsappPhoneId: document.getElementById('setWaPhoneId').value.trim(),
+          whatsappToken: document.getElementById('setWaToken').value.trim(),
+        });
+        btn.disabled = false;
+        if (res.success) alert('تم حفظ الإعدادات بنجاح');
+        else alert(res.message || 'خطأ');
+      } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
     }
 
     // ===== Dashboard =====

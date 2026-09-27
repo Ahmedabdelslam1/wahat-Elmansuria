@@ -103,6 +103,7 @@
       <div>
         <div>رقم الطلب: <strong id="orderId">-</strong></div>
         <div>التاريخ: <span id="orderDate">-</span></div>
+        <div>النوع: <strong id="orderType">-</strong></div>
       </div>
       <div style="text-align:left">
         <div>العميل: <strong id="customerName">-</strong></div>
@@ -162,6 +163,7 @@
         document.getElementById('orderDate').textContent = o.created_at || '-';
         document.getElementById('customerName').textContent = o.customer_name || '-';
         document.getElementById('customerPhone').textContent = o.phone || '-';
+        document.getElementById('orderType').textContent = o.order_type === 'دليفري' ? '🛵 دليفري' : '🍽️ صالة';
         document.getElementById('totalAmount').textContent = o.total;
 
         const tbody = document.getElementById('itemsBody');
