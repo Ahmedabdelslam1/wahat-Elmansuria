@@ -255,8 +255,8 @@
         if (res.success) {
           localStorage.removeItem('wahat_cart');
           cart = [];
-          alert(res.message);
-          window.location.href = '?page=menu';
+          render();
+          showOrderDone(res);
         } else {
           alert(res.message || 'حدث خطأ');
         }
@@ -267,6 +267,20 @@
     }
 
     render();
+
+    // إشعار نجاح الطلب + إرسال على واتس المطعم بنقرة واحدة (بدون توكن)
+    function showOrderDone(res) {
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px';
+      d.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;text-align:center;font-family:inherit;box-shadow:0 18px 50px rgba(0,0,0,.35)">'
+        + '<div style="font-size:36px">✅</div>'
+        + '<div style="font-weight:800;font-size:15px;margin:8px 0 4px">' + esc(res.message || 'تم استلام طلبك بنجاح!') + '</div>'
+        + '<div style="color:#8b8b9a;font-size:12.5px;margin-bottom:14px">الإجمالي ' + (res.total || '') + ' ج.م — سنتواصل معك قريبًا 🛵</div>'
+        + (res.wa_restaurant ? '<a href="' + res.wa_restaurant + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:#128C7E;color:#fff;border-radius:12px;padding:12px 18px;font-size:14px;font-weight:800;margin-bottom:8px">📤 إرسال الطلب على واتس المطعم (نقرة واحدة)</a>' : '')
+        + '<button onclick="window.location.href=\'?page=menu\'" style="background:#eee;color:#555;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;width:100%">متابعة الطلب والمينيو</button>'
+        + '</div>';
+      document.body.appendChild(d);
+    }
   </script>
 </body>
 </html>

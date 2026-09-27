@@ -115,7 +115,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div class="clock" id="clock">--:--:--</div>
-      <button class="sound-btn" id="soundBtn" onclick="enableSound()">🔔 تفعيل التنبيه</button>
+      <button class="sound-btn" id="soundBtn">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -149,37 +149,6 @@
 
   <script>
     let knownNewIds = new Set();
-    let soundEnabled = false;
-    let audioCtx = null;
-
-    function enableSound() {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        soundEnabled = true;
-        const btn = document.getElementById('soundBtn');
-        btn.textContent = '🔔 التنبيه مُفعّل';
-        btn.classList.add('on');
-      } catch (e) {}
-    }
-    function playSiren() {
-      if (!soundEnabled || !audioCtx) return;
-      const now = audioCtx.currentTime;
-      for (let i = 0; i < 3; i++) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        const t0 = now + i * 0.6;
-        osc.frequency.setValueAtTime(600, t0);
-        osc.frequency.linearRampToValueAtTime(1000, t0 + 0.3);
-        osc.frequency.linearRampToValueAtTime(600, t0 + 0.6);
-        gain.gain.setValueAtTime(0.001, t0);
-        gain.gain.linearRampToValueAtTime(0.28, t0 + 0.05);
-        gain.gain.linearRampToValueAtTime(0.001, t0 + 0.58);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(t0); osc.stop(t0 + 0.6);
-      }
-    }
-
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -233,7 +202,7 @@
         if (knownNewIds.size > 0) {
           let hasNew = false;
           ids.forEach(id => { if (!knownNewIds.has(id)) hasNew = true; });
-          if (hasNew) playSiren();
+          if (hasNew && window.__sirenAlert) __sirenAlert('🚨 طلب جديد!');
         }
         knownNewIds = ids;
 
@@ -308,5 +277,6 @@
     loadCompanyOrders();
     setInterval(loadCompanyOrders, 8000);
   </script>
+  <?php include __DIR__ . '/_alerts.php'; ?>
 </body>
 </html>

@@ -682,7 +682,12 @@ function api_place_order($data) {
     }
     if ($phone) send_whatsapp_message($phone, whatsapp_order_message($orderId, $customerName, $items, $total, 'جديد', $orderType));
 
-    json_out(['success' => true, 'orderId' => $orderId, 'total' => $total, 'message' => 'تم استلام طلبك بنجاح! رقم الطلب: ' . $orderId]);
+    // روابط wa.me (بدون توكن): إرسال بنقرة واحدة للمطعم وللعميل — تعمل دائمًا كخطة بديلة أو أساسية
+    $waRestTarget = $ordersWa !== '' ? $ordersWa : get_setting('whatsappNumber', '');
+    $waRest = $waRestTarget !== '' ? wa_me_link($waRestTarget, restaurant_order_message($orderId, $customerName, $phone, $address, $items, $deliveryFee, $total, $orderType, $notes, $user ? $user['name'] : 'موقع')) : '';
+    $waClient = $phone ? wa_me_link($phone, "مرحبًا 👋 من *واحة المنصورة*\nتم استلام طلبك رقم " . $orderId . " بنجاح ✅\nالإجمالي: " . $total . " ج.م\nجاري تحضير طلبك الآن 🍽️") : '';
+
+    json_out(['success' => true, 'orderId' => $orderId, 'total' => $total, 'message' => 'تم استلام طلبك بنجاح! رقم الطلب: ' . $orderId, 'wa_restaurant' => $waRest, 'wa_customer' => $waClient]);
 }
 
 /** تعديل طلب موجود: البيانات + الأصناف + إعادة حساب الإجمالي */
@@ -1375,6 +1380,13 @@ function whatsapp_order_message($orderId, $customerName, $items, $total, $status
            "الأصناف:\n{$itemsTxt}\n\n" .
            "الإجمالي: {$total} جنيه\n" .
            "شكرًا لطلبك من " . APP_NAME . " 🌴";
+}
+
+/** رابط wa.me جاهز بالإرسال بنقرة واحدة (بدون توكن) */
+function wa_me_link($phone, $text) {
+    $digits = preg_replace('/\D/', '', (string)$phone);
+    if ($digits === '') return '';
+    return 'https://wa.me/' . $digits . '?text=' . rawurlencode($text);
 }
 
 /**

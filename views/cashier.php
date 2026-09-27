@@ -115,7 +115,7 @@
       <?php if ($user['role'] === 'admin'): ?>
         <a href="?page=admin" style="color:#ff9500;font-size:11.5px;text-decoration:none;font-weight:700">لوحة المدير</a>
       <?php endif; ?>
-      <button class="sound-btn" id="soundBtn" onclick="enableSound()">🔔 تفعيل التنبيه</button>
+      <button class="sound-btn" id="soundBtn">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -188,77 +188,11 @@
     let currentFilter = 'all';
     let cashierMenu = [];
     let knownOrderIds = new Set();
-    let soundEnabled = false;
-    let audioCtx = null;
 
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    // ===== تنبيه صوتي: إنذار صفارة عالي يعمل تلقائيًا عند أي طلب جديد =====
-    function markSoundReady(label) {
-      soundEnabled = true;
-      const btn = document.getElementById('soundBtn');
-      if (btn) { btn.textContent = label || '🚨 الإنذار مُسلّط تلقائيًا'; btn.classList.add('on'); }
-    }
-    function enableSound() {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        markSoundReady();
-      } catch (e) {}
-    }
-    // تسليح تلقائي: المتصفح يسمح بالصوت بعد أول لمسة/ضغطة على الصفحة
-    (function autoArm() {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'running') { markSoundReady('🚨 الإنذار مُسلّط تلقائيًا'); return; }
-        const arm = () => {
-          if (!audioCtx) return;
-          audioCtx.resume().then(() => markSoundReady()).catch(() => {});
-        };
-        ['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
-          document.addEventListener(evt, arm, { once: true, passive: true }));
-      } catch (e) {
-        // متصفح قديم: يظل الزر اليدوي متاحًا
-      }
-    })();
-
-    let sirenPlaying = false;
-    function playSiren() {
-      if (!soundEnabled || !audioCtx || audioCtx.state !== 'running' || sirenPlaying) return;
-      sirenPlaying = true;
-      if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {} }
-      const now = audioCtx.currentTime;
-      // إنذار مرتفع: نغمتان متبادلتان (شرطة طويلة + نقرة) × 4 دورات
-      const master = audioCtx.createGain();
-      master.gain.value = 0.55;
-      master.connect(audioCtx.destination);
-      const cycle = 0.75;
-      for (let i = 0; i < 8; i++) {
-        const t0 = now + i * cycle * 0.5;
-        const hi = i % 2 === 0;
-        const freq = hi ? 980 : 720;
-        const osc = audioCtx.createOscillator();
-        const osc2 = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc2.type = 'sawtooth';
-        osc.frequency.value = freq;
-        osc2.frequency.value = freq * 0.5;
-        const dur = cycle * 0.5;
-        gain.gain.setValueAtTime(0.0001, t0);
-        gain.gain.exponentialRampToValueAtTime(0.85, t0 + 0.02);
-        gain.gain.setValueAtTime(0.85, t0 + dur - 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-        osc.connect(gain); osc2.connect(gain);
-        gain.connect(master);
-        osc.start(t0); osc.stop(t0 + dur + 0.02);
-        osc2.start(t0); osc2.stop(t0 + dur + 0.02);
-      }
-      setTimeout(() => { sirenPlaying = false; }, 3200);
     }
 
     function showTab(id, btn) {
@@ -328,7 +262,7 @@
       if (knownOrderIds.size > 0) {
         let hasNew = false;
         ids.forEach(id => { if (!knownOrderIds.has(id)) hasNew = true; });
-        if (hasNew) playSiren();
+        if (hasNew && window.__sirenAlert) __sirenAlert('🚨 طلب جديد!');
       }
       knownOrderIds = ids;
     }
@@ -575,6 +509,8 @@
               ${canEdit ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) cancelOrderDirect(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
               <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) deleteOrderDirect(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
               <button class="btn-prep" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️ فاتورة</button>
+              ${window.waRestLink ? `<a class="act-btn" style="background:#128C7E;color:#fff;text-decoration:none;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:700" href="${waRestLink(o)}" target="_blank">📤 واتس</a>` : ''}
+              ${(window.waClientLink && o.phone) ? `<a class="act-btn" style="background:#e5f0ff;color:#007aff;text-decoration:none;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:700" href="${waClientLink(o)}" target="_blank">📲 العميل</a>` : ''}
             </div>
           </div>
         `;
@@ -612,5 +548,6 @@
     setInterval(() => loadOrders(currentFilter), 12000);
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
+  <?php include __DIR__ . '/_alerts.php'; ?>
 </body>
 </html>

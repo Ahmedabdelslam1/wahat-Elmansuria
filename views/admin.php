@@ -101,6 +101,7 @@
     <div style="display:flex;align-items:center;gap:8px">
       <a href="?page=cashier" style="color:#ff9500;font-size:12px;text-decoration:none;font-weight:700">الكاشير</a>
       <a href="?page=kitchen" style="color:#34c759;font-size:12px;text-decoration:none;font-weight:700">المطبخ</a>
+      <button class="logout" id="soundBtn" style="background:linear-gradient(135deg,#c62828,#ff5252);border-color:#ff5252;margin-inline-end:8px">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -273,6 +274,7 @@
       <h3>📱 واتساب المطعم لاستقبال الطلبات</h3>
       <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
         كل طلب جديد يُرسل تلقائيًا بهدفاته الكاملة على هذا الرقم عبر واتساب (يتطلب بيانات WhatsApp Cloud API بالأسفل).
+        <b>بدون توكن:</b> يظهر زر «📤 إرسال على واتس» في الكاشير ولوحة الطلبات وأيضًا للعميل بعد الطلب — يفتح الواتس بالرسالة جاهزة بنقرة واحدة على هذا الرقم، ومن هاتف المطعم يمكن تمريرها لجروب الشيفات.
         اكتبه بالصيغة الدولية بدون + مثل: 201153431728
       </p>
       <div class="form-row"><label>رقم واتساب المطعم المخصص للطلبات</label><input id="setOrdersWhatsapp" placeholder="201153431728"></div>
@@ -574,6 +576,7 @@
         if (!res.success) { box.innerHTML = 'خطأ'; return; }
       window.adminOrdersCache = {};
       res.orders.slice(0, 30).forEach(o => { window.adminOrdersCache[o.order_id] = o; });
+      if (window.__sirenCheck) __sirenCheck(res.orders, true);
       box.innerHTML = res.orders.slice(0, 30).map(o => {
         const canEdit = ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status);
         const typeLabel = o.order_type === 'شركات' ? '🏢' : (o.order_type === 'دليفري' ? '🛵' : '🍽️');
@@ -586,6 +589,8 @@
             ${canEdit ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) adminCancelOrder(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
             <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) adminDeleteOrder(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
             <button class="act-btn act-add" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️</button>
+            ${window.waRestLink ? `<a class="act-btn" style="background:#128C7E;color:#fff;text-decoration:none" href="${waRestLink(o)}" target="_blank">📤 واتس</a>` : ''}
+            ${(window.waClientLink && o.phone) ? `<a class="act-btn" style="background:#e5f0ff;color:#007aff;text-decoration:none" href="${waClientLink(o)}" target="_blank">📲</a>` : ''}
           </span>
         </div>`;
       }).join('') || '<p>لا توجد طلبات</p>';
@@ -773,5 +778,6 @@
     loadDashboard();
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
+  <?php include __DIR__ . '/_alerts.php'; ?>
 </body>
 </html>

@@ -200,8 +200,12 @@ $posAllowCompany = $posAllowCompany ?? false;
         posCart = [];
         renderPosCart();
         ['posCustomer', 'posPhone', 'posNotes', 'posAddress', 'posCompany', 'posDepartment'].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
-        alert('تم إنشاء الطلب: ' + res.orderId);
-        if (confirm('فتح فاتورة الطلب؟')) window.open('?page=invoice&id=' + encodeURIComponent(res.orderId), '_blank');
+        if (typeof window.__posOrderDone === 'function') {
+          __posOrderDone(res);
+        } else {
+          alert('تم إنشاء الطلب: ' + res.orderId);
+          if (confirm('فتح فاتورة الطلب؟')) window.open('?page=invoice&id=' + encodeURIComponent(res.orderId), '_blank');
+        }
         if (typeof window.posAfterSubmit === 'function') window.posAfterSubmit(res);
       } else alert(res.message || 'خطأ');
     } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
