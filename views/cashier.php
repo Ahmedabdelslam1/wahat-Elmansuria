@@ -101,81 +101,6 @@
     .mcard .p { font-size: 11.5px; font-weight: 800; color: var(--primary); }
     .mcard .c { font-size: 8.5px; color: var(--muted); }
 
-    /* ===== POS: طلب جديد ===== */
-    .pos-wrap { display:flex; flex-direction:column; }
-    .pos-search { padding:10px 12px 4px; }
-    .pos-search input { width:100%; padding:9px 13px; border:1px solid var(--border); border-radius:12px; font-family:inherit; font-size:13px; }
-    .pos-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; padding:8px 12px; }
-    @media (min-width:600px) { .pos-grid { grid-template-columns:repeat(4,1fr); } }
-    .pos-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; text-align:center; transition:transform .1s; }
-    .pos-item:active { transform:scale(0.95); }
-    .pos-item .th { aspect-ratio:1.2/1; overflow:hidden; }
-    .pos-item .th img { width:100%; height:100%; object-fit:cover; display:block; }
-    .pos-item .b { padding:5px 5px 7px; }
-    .pos-item h4 { font-size:9.5px; font-weight:800; min-height:24px; line-height:1.25; margin-bottom:2px; }
-    .pos-item .p { font-size:10.5px; font-weight:800; color:var(--primary); }
-
-    .pos-cart {
-      position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border);
-      box-shadow: 0 -6px 20px -8px rgba(20,20,30,0.15);
-      padding: 10px 14px 14px; z-index: 40;
-    }
-    .pos-cart-list { max-height: 160px; overflow-y:auto; margin-bottom:8px; }
-    .pos-cart-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--border); font-size:12px; }
-    .qty-ctl { display:flex; align-items:center; gap:8px; }
-    .qty-ctl button { width:24px; height:24px; border-radius:8px; border:none; background:var(--bg); font-weight:800; cursor:pointer; }
-    .pos-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
-    .pos-fields input { padding:9px 11px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:12.5px; }
-    .pos-address { display:none; margin-bottom:8px; }
-    .pos-address input { width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:12.5px; }
-    .pos-address.show { display:block; }
-    .fee-rows { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-weight:700; padding:2px 0 6px; }
-    .fee-rows.delivery-on { color:#ef6c00; }
-    .type-toggle { display:flex; gap:8px; margin-bottom:8px; }
-    .type-toggle button {
-      flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg);
-      font-family:inherit; font-weight:800; font-size:12.5px; cursor:pointer; color:var(--text);
-    }
-    .type-toggle button.active.dinein { background:#e5f0ff; border-color:#007aff; color:#007aff; }
-    .type-toggle button.active.delivery { background:#fff3e0; border-color:#ff9500; color:#ff9500; }
-    .pos-submit-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-
-    /* ===== طلبات الشركات ===== */
-    .co-form { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:12px; }
-    .co-form .co-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .co-form input, .co-form select {
-      width:100%; padding:10px 11px; border:1px solid var(--border); border-radius:10px;
-      font-family:inherit; font-size:12.5px; background:var(--bg);
-    }
-    .co-form input.wide { grid-column:1 / -1; }
-    .co-form select { font-weight:800; }
-    .co-live-total {
-      grid-column:1 / -1; background:#fff3e0; border:1px dashed #ff9500; border-radius:10px;
-      padding:8px 12px; font-size:12.5px; font-weight:800; color:#ef6c00;
-      display:flex; justify-content:space-between; align-items:center;
-    }
-    .co-submit {
-      grid-column:1 / -1; background:linear-gradient(90deg,#ef6c00,#e65100); color:#fff;
-      border:none; padding:13px; border-radius:12px; font-weight:800; font-size:13.5px;
-      cursor:pointer; font-family:inherit;
-    }
-    .co-submit:disabled { opacity:.5; cursor:wait; }
-    .co-grand {
-      display:flex; justify-content:space-between; background:var(--dark); color:#fff;
-      border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:12.5px; font-weight:800;
-    }
-    .co-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:8px; overflow:hidden; }
-    .co-head { display:flex; justify-content:space-between; align-items:center; padding:11px 12px; cursor:pointer; gap:8px; flex-wrap:wrap; }
-    .co-head .cname { font-weight:800; font-size:13.5px; color:var(--primary); text-decoration:underline; }
-    .co-head .ctotal { font-weight:800; font-size:13px; }
-    .co-body { display:none; border-top:1px dashed var(--border); padding:8px 12px; font-size:12px; }
-    .co-body.show { display:block; }
-    .co-row { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed var(--border); flex-wrap:wrap; }
-    .co-row:last-child { border-bottom:none; }
-    .co-row .muted { color:var(--muted); font-size:11px; }
-    .pos-total { font-size:16px; font-weight:800; color:var(--primary); }
-    .pos-submit { flex:1; background:linear-gradient(90deg,var(--primary),var(--primary-dark)); color:#fff; border:none; padding:13px; border-radius:12px; font-weight:800; font-size:13.5px; cursor:pointer; font-family:inherit; }
-    .pos-submit:disabled { opacity:.5; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
@@ -208,35 +133,8 @@
     <button class="tab" onclick="showTab('companies', this)">🏢 شركات</button>
   </div>
 
-  <!-- POS: طلب جديد -->
-  <div class="panel active" id="panel-pos">
-    <div class="pos-wrap">
-      <div class="pos-search"><input id="posSearch" placeholder="بحث عن صنف..." oninput="renderPosGrid()"></div>
-      <div class="pos-grid" id="posGrid"></div>
-    </div>
-    <div class="pos-cart">
-      <div class="pos-cart-list" id="posCartList"><div class="empty" style="padding:14px">لم تُضف أي أصناف بعد</div></div>
-      <div class="type-toggle">
-        <button class="dinein active" id="btnDinein" onclick="setOrderType('صالة')">🍽️ صالة</button>
-        <button class="delivery" id="btnDelivery" onclick="setOrderType('دليفري')">🛵 دليفري</button>
-      </div>
-      <div class="pos-fields">
-        <input id="posCustomer" placeholder="اسم العميل (اختياري)">
-        <input id="posPhone" placeholder="رقم الهاتف (لواتساب)">
-      </div>
-      <div class="pos-fields" style="grid-template-columns:1fr">
-        <input id="posNotes" placeholder="ملاحظات (اختياري)">
-      </div>
-      <div class="pos-address" id="posAddressWrap">
-        <input id="posAddress" placeholder="📍 عنوان التوصيل (إجباري للدليفري)">
-      </div>
-      <div id="feeRows"></div>
-      <div class="pos-submit-row">
-        <span class="pos-total" id="posTotal">0 ج.م</span>
-        <button class="pos-submit" id="posSubmitBtn" onclick="submitPosOrder()">تأكيد الطلب</button>
-      </div>
-    </div>
-  </div>
+  <!-- POS: طلب جديد (شاشة مشتركة مع لوحة المدير) -->
+  <?php $posActive = true; include __DIR__ . '/_pos.php'; ?>
 
   <!-- الطلبات -->
   <div class="panel" id="panel-orders">
@@ -284,9 +182,6 @@
   <script>
     let currentFilter = 'all';
     let cashierMenu = [];
-    let posDeliveryFee = 0;
-    let posCart = [];
-    let posOrderType = 'صالة';
     let knownOrderIds = new Set();
     let soundEnabled = false;
     let audioCtx = null;
@@ -367,8 +262,6 @@
       btn.classList.add('active');
       document.getElementById('panel-' + id).classList.add('active');
       if (id === 'menu' && cashierMenu.length === 0) loadMenu();
-      if (id === 'pos' && cashierMenu.length === 0) loadMenu().then(renderPosGrid);
-      else if (id === 'pos') renderPosGrid();
       if (id === 'companies') loadCompaniesToday();
     }
 
@@ -394,98 +287,8 @@
       `).join('') || '<div class="empty">لا توجد أصناف</div>';
     }
 
-    // ===== POS =====
-    function renderPosGrid() {
-      const term = document.getElementById('posSearch').value.trim().toLowerCase();
-      const items = term ? cashierMenu.filter(i => i.name.toLowerCase().includes(term)) : cashierMenu;
-      document.getElementById('posGrid').innerHTML = items.map(i => `
-        <div class="pos-item" onclick='posAdd(${JSON.stringify(i)})'>
-          <div class="th"><img src="${i.image}" alt="" loading="lazy"></div>
-          <div class="b"><h4>${esc(i.name)}</h4><div class="p">${i.price} ج.م</div></div>
-        </div>
-      `).join('');
-    }
-
-    function posAdd(item) {
-      const exist = posCart.find(c => String(c.id) === String(item.id));
-      if (exist) exist.qty++;
-      else posCart.push({ id: item.id, name: item.name, price: Number(item.price) || 0, qty: 1 });
-      renderPosCart();
-    }
-    function posChangeQty(id, delta) {
-      const it = posCart.find(c => String(c.id) === String(id));
-      if (!it) return;
-      it.qty += delta;
-      if (it.qty <= 0) posCart = posCart.filter(c => String(c.id) !== String(id));
-      renderPosCart();
-    }
-    function setOrderType(type) {
-      posOrderType = type;
-      document.getElementById('btnDinein').classList.toggle('active', type === 'صالة');
-      document.getElementById('btnDelivery').classList.toggle('active', type === 'دليفري');
-      document.getElementById('posAddressWrap').classList.toggle('show', type === 'دليفري');
-      renderPosCart();
-    }
-    function renderPosCart() {
-      const list = document.getElementById('posCartList');
-      if (!posCart.length) {
-        list.innerHTML = '<div class="empty" style="padding:14px">لم تُضف أي أصناف بعد</div>';
-      } else {
-        list.innerHTML = posCart.map(c => `
-          <div class="pos-cart-row">
-            <span>${esc(c.name)}</span>
-            <div class="qty-ctl">
-              <button onclick="posChangeQty(${c.id}, -1)">−</button>
-              <b>${c.qty}</b>
-              <button onclick="posChangeQty(${c.id}, 1)">+</button>
-              <span style="min-width:50px;text-align:left;font-weight:700">${c.qty * c.price}</span>
-            </div>
-          </div>
-        `).join('');
-      }
-      const subtotal = posCart.reduce((s, c) => s + c.qty * c.price, 0);
-      const isDelivery = posOrderType === 'دليفري';
-      const fee = isDelivery ? posDeliveryFee : 0;
-      const total = subtotal + fee;
-      document.getElementById('feeRows').innerHTML = isDelivery
-        ? `<div class="fee-rows delivery-on"><span>المجموع: ${subtotal} ج.م</span><span>🛵 التوصيل: ${fee} ج.م</span></div>`
-        : '';
-      document.getElementById('posTotal').textContent = total + ' ج.م';
-    }
-
-    async function submitPosOrder() {
-      if (!posCart.length) { alert('أضف أصنافًا أولًا'); return; }
-      const address = document.getElementById('posAddress').value.trim();
-      if (posOrderType === 'دليفري') {
-        const dphone = document.getElementById('posPhone').value.trim();
-        if (!dphone || !address) { alert('طلبات الدليفري تتطلب رقم الهاتف والعنوان'); return; }
-      }
-      const btn = document.getElementById('posSubmitBtn');
-      btn.disabled = true;
-      try {
-        const res = await api('place_order', {
-          items: posCart.map(c => ({ id: c.id, qty: c.qty })),
-          customerName: document.getElementById('posCustomer').value.trim(),
-          phone: document.getElementById('posPhone').value.trim(),
-          notes: document.getElementById('posNotes').value.trim(),
-          address: address,
-          orderType: posOrderType,
-        });
-        btn.disabled = false;
-        if (res.success) {
-          posCart = [];
-          renderPosCart();
-          document.getElementById('posCustomer').value = '';
-          document.getElementById('posPhone').value = '';
-          document.getElementById('posNotes').value = '';
-          document.getElementById('posAddress').value = '';
-          alert('تم إنشاء الطلب: ' + res.orderId);
-          if (confirm('فتح فاتورة الطلب؟')) window.open('?page=invoice&id=' + encodeURIComponent(res.orderId), '_blank');
-          loadOrders(currentFilter);
-          loadTodaySummary();
-        } else alert(res.message || 'خطأ');
-      } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
-    }
+    // بعد تسجيل طلب من شاشة POS: تحديث قائمة الطلبات والعدادات
+    window.posAfterSubmit = function () { loadOrders(currentFilter); loadTodaySummary(); };
 
     // ===== الطلبات =====
     async function loadOrders(filter, btn) {
@@ -666,10 +469,6 @@
       window.location.href = '?page=login';
     }
 
-    api('public_settings').then(res => {
-      if (res.success && res.settings) posDeliveryFee = Number(res.settings.deliveryFee) || 0;
-    }).catch(() => {});
-    loadMenu().then(renderPosGrid);
     loadOrders('all');
     setInterval(() => loadOrders(currentFilter), 12000);
   </script>

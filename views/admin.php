@@ -102,6 +102,7 @@
 
   <div class="tabs">
     <button class="tab active" onclick="showPanel('dashboard', this)">📊 نظرة عامة</button>
+    <button class="tab" onclick="showPanel('pos', this)">🧾 طلب جديد</button>
     <button class="tab" onclick="showPanel('menu', this)">🍽️ المنيو</button>
     <button class="tab" onclick="showPanel('users', this)">👥 المستخدمين</button>
     <button class="tab" onclick="showPanel('orders', this)">📋 الطلبات</button>
@@ -110,6 +111,9 @@
   </div>
 
   <!-- Dashboard -->
+  <!-- شاشة طلب جديد (نفس شاشة الكاشير) -->
+  <?php include __DIR__ . '/_pos.php'; ?>
+
   <div class="panel active" id="panel-dashboard">
     <div class="kpis">
       <div class="kpi red"><div class="icon">💰</div><div class="num" id="kpiTodaySales">-</div><div class="label">مبيعات اليوم (ج.م)</div></div>
@@ -294,6 +298,7 @@
       btn.classList.add('active');
       if (id === 'menu') loadMenuAdmin();
       if (id === 'orders') loadAdminOrders();
+      if (id === 'pos' && window.posInit) posInit();
       if (id === 'dashboard') loadDashboard();
       if (id === 'users') loadUsers();
       if (id === 'reports') {
@@ -421,6 +426,12 @@
         document.getElementById('reportResult').innerHTML = '<div class="card">خطأ في الاتصال بالسيرفر</div>';
       }
     }
+
+    // بعد تسجيل طلب من شاشة طلب جديد: تحديث الطلبات واللوحة
+    window.posAfterSubmit = function () {
+      loadAdminOrders();
+      loadDashboard();
+    };
 
     // ===== تقرير طلبات الشركات =====
     async function loadCompanyReportToday() {
