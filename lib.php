@@ -144,6 +144,31 @@ function init_db(PDO $db) {
         if (!column_exists($db, 'orders', 'delivery_fee')) {
             $db->exec("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0");
         }
+        if (!column_exists($db, 'orders', 'company_name')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN company_name VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'department')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN department VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'company_orders', 'item_name')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN item_name VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'company_orders', 'order_id')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
+        }
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                action VARCHAR(50) NOT NULL,
+                entity VARCHAR(50) NOT NULL DEFAULT '',
+                entity_id VARCHAR(50) DEFAULT '',
+                details VARCHAR(500) DEFAULT '',
+                created_at DATETIME NOT NULL,
+                INDEX idx_audit_date (created_at),
+                INDEX idx_audit_user (username)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
     } else {
         $db->exec("
             CREATE TABLE IF NOT EXISTS users (
@@ -218,6 +243,31 @@ function init_db(PDO $db) {
         if (!column_exists($db, 'orders', 'delivery_fee')) {
             $db->exec("ALTER TABLE orders ADD COLUMN delivery_fee REAL NOT NULL DEFAULT 0");
         }
+        if (!column_exists($db, 'orders', 'company_name')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN company_name VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'orders', 'department')) {
+            $db->exec("ALTER TABLE orders ADD COLUMN department VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'company_orders', 'item_name')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN item_name VARCHAR(200) DEFAULT ''");
+        }
+        if (!column_exists($db, 'company_orders', 'order_id')) {
+            $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
+        }
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                action TEXT NOT NULL,
+                entity TEXT DEFAULT '',
+                entity_id TEXT DEFAULT '',
+                details TEXT DEFAULT '',
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_date ON audit_log(created_at);
+            CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(username);
+        ");
     }
 
     // بيانات أولية (مرة واحدة)
@@ -529,6 +579,17 @@ function api_menu() {
     json_out(['success' => true, 'items' => $items]);
 }
 
+/** تسجيل عملية في سجل المستخدمين (إضافة/تعديل/حذف/إلغاء...) */
+function log_activity($action, $entity, $entityId, $details = '') {
+    try {
+        $db = db();
+        $u = current_user();
+        $username = $u ? $u['username'] : 'guest';
+        $st = $db->prepare('INSERT INTO audit_log (username, action, entity, entity_id, details, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+        $st->execute([$username, (string)$action, (string)$entity, (string)$entityId, mb_substr((string)$details, 0, 480), date('Y-m-d H:i:s')]);
+    } catch (Exception $e) {}
+}
+
 function api_place_order($data) {
     $db = db();
     $inputItems = is_array($data['items'] ?? null) ? $data['items'] : [];
@@ -557,7 +618,18 @@ function api_place_order($data) {
     $notes = trim((string)($data['notes'] ?? ''));
     $address = trim((string)($data['address'] ?? ''));
     $orderType = (string)($data['orderType'] ?? 'صالة');
-    if (!in_array($orderType, ['صالة', 'دليفري'], true)) $orderType = 'صالة';
+
+    // طلبات الموقع (غير الكاشير/المدير) = دليفري فقط
+    $isStaff = $user && in_array($user['role'], ['admin', 'cashier'], true);
+    if (!$isStaff) $orderType = 'دليفري';
+    if (!in_array($orderType, ['صالة', 'دليفري', 'شركات'], true)) $orderType = 'صالة';
+
+    // بيانات الشركة (لنوع شركات)
+    $companyName = trim((string)($data['companyName'] ?? ''));
+    $department = trim((string)($data['department'] ?? ''));
+    if ($orderType === 'شركات' && $companyName === '') {
+        json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+    }
     if ($orderType === 'دليفري' && ($phone === '' || $address === '')) {
         json_out(['success' => false, 'message' => 'طلبات الدليفري تتطلب رقم الهاتف والعنوان']);
     }
@@ -569,7 +641,7 @@ function api_place_order($data) {
         $total += $deliveryFee;
     }
 
-    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, address, delivery_fee, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, address, delivery_fee, created_by, company_name, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $orderId,
         date('Y-m-d H:i:s'),
@@ -583,7 +655,18 @@ function api_place_order($data) {
         $address,
         $deliveryFee,
         $user ? $user['username'] : 'guest',
+        $companyName,
+        $department,
     ]);
+
+    // طلب شركة: تسجيل الأصناف في جدول الشركات لتظهر في تقارير الشركات
+    if ($orderType === 'شركات') {
+        $co = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by, order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        foreach ($items as $it) {
+            $co->execute([$companyName, $department, 'من المنيو', $it['name'], $it['qty'], $it['price'], $it['price'] * $it['qty'], $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user ? $user['username'] : 'guest', $orderId]);
+        }
+    }
+    log_activity('إضافة طلب', 'طلب', $orderId, ($orderType === 'شركات' ? 'شركة: ' . $companyName . ' — ' : '') . count($items) . ' صنف بإجمالي ' . $total . ' ج.م (' . $orderType . ')');
 
     send_order_notification($orderId, $customerName, $phone, $notes, $items, $total, $orderType);
     // إرسال تفاصيل الطلب لرقم واتساب المطعم المخصص لاستقبال الطلبات
@@ -594,6 +677,120 @@ function api_place_order($data) {
     if ($phone) send_whatsapp_message($phone, whatsapp_order_message($orderId, $customerName, $items, $total, 'جديد', $orderType));
 
     json_out(['success' => true, 'orderId' => $orderId, 'total' => $total, 'message' => 'تم استلام طلبك بنجاح! رقم الطلب: ' . $orderId]);
+}
+
+/** تعديل طلب موجود: البيانات + الأصناف + إعادة حساب الإجمالي */
+function api_update_order($data) {
+    require_role(['admin', 'cashier']);
+    $db = db();
+    $orderId = (string)($data['orderId'] ?? '');
+    $old = $db->prepare('SELECT * FROM orders WHERE order_id = ?');
+    $old->execute([$orderId]);
+    $o = $old->fetch();
+    if (!$o) json_out(['success' => false, 'message' => 'الطلب غير موجود']);
+
+    $inputItems = is_array($data['items'] ?? null) ? $data['items'] : [];
+    if (!$inputItems) json_out(['success' => false, 'message' => 'السلة فارغة']);
+
+    $items = [];
+    $total = 0.0;
+    $st = $db->prepare('SELECT name, price FROM menu WHERE id = ?');
+    foreach ($inputItems as $it) {
+        $id = (int)($it['id'] ?? 0);
+        $qty = max(1, (int)($it['qty'] ?? 1));
+        $st->execute([$id]);
+        $m = $st->fetch();
+        if (!$m) continue;
+        $price = (float)$m['price'];
+        $total += $price * $qty;
+        $items[] = ['id' => $id, 'name' => $m['name'], 'price' => $price, 'qty' => $qty];
+    }
+    if (!$items) json_out(['success' => false, 'message' => 'لا توجد أصناف صالحة']);
+
+    $orderType = (string)($data['orderType'] ?? $o['order_type']);
+    if (!in_array($orderType, ['صالة', 'دليفري', 'شركات'], true)) $orderType = 'صالة';
+    $deliveryFee = 0.0;
+    if ($orderType === 'دليفري') {
+        $deliveryFee = (float)get_setting('deliveryFee', '0');
+        $total += $deliveryFee;
+    }
+    $companyName = trim((string)($data['companyName'] ?? ($o['company_name'] ?? '')));
+    $department = trim((string)($data['department'] ?? ($o['department'] ?? '')));
+    if ($orderType === 'شركات' && $companyName === '') json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+
+    $stmt = $db->prepare('UPDATE orders SET customer_name = ?, phone = ?, items_json = ?, total = ?, order_type = ?, notes = ?, address = ?, delivery_fee = ?, company_name = ?, department = ? WHERE order_id = ?');
+    $stmt->execute([
+        trim((string)($data['customerName'] ?? $o['customer_name'])),
+        trim((string)($data['phone'] ?? $o['phone'])),
+        json_encode($items, JSON_UNESCAPED_UNICODE),
+        $total,
+        $orderType,
+        trim((string)($data['notes'] ?? $o['notes'])),
+        trim((string)($data['address'] ?? $o['address'])),
+        $deliveryFee,
+        $companyName,
+        $department,
+        $orderId,
+    ]);
+
+    // مزامنة أصناف الشركة المرتبطة بالطلب
+    $del = $db->prepare('DELETE FROM company_orders WHERE order_id = ?');
+    $del->execute([$orderId]);
+    if ($orderType === 'شركات') {
+        $u = current_user();
+        $co = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by, order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        foreach ($items as $it) {
+            $co->execute([$companyName, $department, 'من المنيو', $it['name'], $it['qty'], $it['price'], $it['price'] * $it['qty'], '', date('Y-m-d'), date('Y-m-d H:i:s'), $u['username'], $orderId]);
+        }
+    }
+    log_activity('تعديل طلب', 'طلب', $orderId, 'إجمالي قديم: ' . $o['total'] . ' ج.م → جديد: ' . $total . ' ج.م');
+    json_out(['success' => true, 'message' => 'تم تعديل الطلب', 'total' => $total]);
+}
+
+/** إلغاء طلب (حالة ملغي — لا يُحسب في المبيعات) */
+function api_cancel_order($data) {
+    require_role(['admin', 'cashier']);
+    $db = db();
+    $orderId = (string)($data['orderId'] ?? '');
+    $stmt = $db->prepare("UPDATE orders SET status = 'ملغي' WHERE order_id = ?");
+    $stmt->execute([$orderId]);
+    if ((int)$stmt->rowCount()) {
+        log_activity('إلغاء طلب', 'طلب', $orderId, 'تم إلغاء الطلب');
+        json_out(['success' => true, 'message' => 'تم إلغاء الطلب']);
+    }
+    json_out(['success' => false, 'message' => 'الطلب غير موجود']);
+}
+
+/** حذف طلب نهائيًا */
+function api_delete_order($data) {
+    require_role(['admin', 'cashier']);
+    $db = db();
+    $orderId = (string)($data['orderId'] ?? '');
+    $stmt = $db->prepare('DELETE FROM orders WHERE order_id = ?');
+    $stmt->execute([$orderId]);
+    if ((int)$stmt->rowCount()) {
+        $del = $db->prepare('DELETE FROM company_orders WHERE order_id = ?');
+        $del->execute([$orderId]);
+        log_activity('حذف طلب', 'طلب', $orderId, 'حُذف الطلب نهائيًا من النظام');
+        json_out(['success' => true, 'message' => 'تم حذف الطلب']);
+    }
+    json_out(['success' => false, 'message' => 'الطلب غير موجود']);
+}
+
+/** تقرير سجل عمليات المستخدمين خلال فترة */
+function api_audit_report($data) {
+    require_role(['admin']);
+    $db = db();
+    $from = date('Y-m-d', strtotime((string)($data['from'] ?? date('Y-m-d'))));
+    $to = date('Y-m-d', strtotime((string)($data['to'] ?? date('Y-m-d'))));
+    if ($from > $to) { $t = $from; $from = $to; $to = $t; }
+    $fromDt = $from . ' 00:00:00';
+    $toDt = $to . ' 23:59:59';
+    $stmt = $db->prepare('SELECT * FROM audit_log WHERE created_at >= ? AND created_at <= ? ORDER BY id DESC LIMIT 1000');
+    $stmt->execute([$fromDt, $toDt]);
+    $rows = [];
+    while ($row = $stmt->fetch()) $rows[] = $row;
+    json_out(['success' => true, 'from' => $from, 'to' => $to, 'entries' => $rows, 'count' => count($rows)]);
 }
 
 function api_get_orders($data) {
@@ -629,6 +826,7 @@ function api_update_status($data) {
     $stmt = $db->prepare('UPDATE orders SET status = ? WHERE order_id = ?');
     $stmt->execute([$status, $orderId]);
     if ((int)$stmt->rowCount()) {
+        log_activity('تحديث حالة', 'طلب', $orderId, 'الحالة الجديدة: ' . $status);
         $ord = $db->prepare('SELECT * FROM orders WHERE order_id = ?');
         $ord->execute([$orderId]);
         $o = $ord->fetch();
@@ -656,12 +854,17 @@ function api_save_item($data) {
     if ($id > 0) {
         $stmt = $db->prepare('UPDATE menu SET name = ?, category = ?, price = ?, descr = ?, image = ? WHERE id = ?');
         $stmt->execute([$name, $category, $price, $descr, $image, $id]);
-        if ((int)$stmt->rowCount()) json_out(['success' => true, 'message' => 'تم التحديث']);
+        if ((int)$stmt->rowCount()) {
+            log_activity('تعديل صنف', 'منيو', (string)$id, $name . ' — ' . $price . ' ج.م');
+            json_out(['success' => true, 'message' => 'تم التحديث']);
+        }
         json_out(['success' => false, 'message' => 'الصنف غير موجود']);
     }
     $stmt = $db->prepare('INSERT INTO menu (name, category, price, descr, active, image) VALUES (?, ?, ?, ?, 1, ?)');
     $stmt->execute([$name, $category, $price, $descr, $image]);
-    json_out(['success' => true, 'message' => 'تم الإضافة', 'id' => (int)$db->lastInsertId()]);
+    $newId = (int)$db->lastInsertId();
+    log_activity('إضافة صنف', 'منيو', (string)$newId, $name . ' — ' . $price . ' ج.م');
+    json_out(['success' => true, 'message' => 'تم الإضافة', 'id' => $newId]);
 }
 
 function api_toggle_item($data) {
@@ -669,6 +872,7 @@ function api_toggle_item($data) {
     $db = db();
     $stmt = $db->prepare('UPDATE menu SET active = ? WHERE id = ?');
     $stmt->execute([!empty($data['active']) ? 1 : 0, (int)($data['id'] ?? 0)]);
+    log_activity(!empty($data['active']) ? 'تفعيل صنف' : 'إخفاء صنف', 'منيو', (string)($data['id'] ?? ''), '');
     json_out(['success' => true, 'message' => !empty($data['active']) ? 'تم تفعيل الصنف' : 'تم إخفاء الصنف']);
 }
 
@@ -688,6 +892,7 @@ function api_add_user($data) {
 
     $stmt = $db->prepare('INSERT INTO users (username, password_hash, name, role, permissions) VALUES (?, ?, ?, ?, ?)');
     $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $name, $role, $permissions ? json_encode($permissions) : '']);
+    log_activity('إضافة مستخدم', 'مستخدم', $username, $name . ' (' . $role . ')');
     json_out(['success' => true, 'message' => 'تم إضافة المستخدم']);
 }
 
@@ -724,6 +929,10 @@ function api_update_permissions($data) {
     $params[] = $id;
     $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?');
     $stmt->execute($params);
+    $uq = $db->prepare('SELECT username FROM users WHERE id = ?');
+    $uq->execute([$id]);
+    $uu = $uq->fetch();
+    log_activity('تعديل صلاحيات', 'مستخدم', $uu ? $uu['username'] : (string)$id, implode(', ', array_merge($permissions, isset($data['role']) ? ['دور: ' . $data['role']] : [])));
     json_out(['success' => true, 'message' => 'تم تحديث صلاحيات المستخدم']);
 }
 
@@ -749,6 +958,7 @@ function api_update_settings($data) {
         if ($exists) $st->execute([$v, $k]);
         else $ins->execute([$k, $v]);
     }
+    log_activity('تعديل إعدادات', 'إعدادات', '', 'تم حفظ إعدادات المطعم');
     json_out(['success' => true, 'message' => 'تم حفظ الإعدادات']);
 }
 
@@ -758,7 +968,7 @@ function api_report($data) {
     $date = (string)($data['date'] ?? date('Y-m-d'));
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $date = date('Y-m-d');
 
-    $stmt = $db->prepare('SELECT items_json, total, status FROM orders WHERE SUBSTR(created_at, 1, 10) = ?');
+    $stmt = $db->prepare("SELECT items_json, total, status FROM orders WHERE SUBSTR(created_at, 1, 10) = ? AND status != 'ملغي'");
     $stmt->execute([$date]);
 
     $totalOrders = 0;
@@ -979,6 +1189,10 @@ function api_update_user($data) {
     $params[] = $id;
     $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?');
     $stmt->execute($params);
+    $changes = [$name];
+    if ($password !== '') $changes[] = 'كلمة سر جديدة';
+    if (isset($data['role'])) $changes[] = 'دور: ' . $data['role'];
+    log_activity('تعديل مستخدم', 'مستخدم', $username, implode(' — ', $changes));
     json_out(['success' => true, 'message' => 'تم تحديث بيانات المستخدم']);
 }
 
@@ -989,7 +1203,9 @@ function api_add_company_order($data) {
     $company = trim((string)($data['companyName'] ?? ''));
     $department = trim((string)($data['department'] ?? ''));
     $package = (string)($data['package'] ?? 'جافة ×50');
-    if (!in_array($package, ['جافة ×50', 'جافة ×100'], true)) $package = 'جافة ×50';
+    if (!in_array($package, ['جافة ×50', 'جافة ×100', 'من المنيو'], true)) $package = 'جافة ×50';
+    $itemName = trim((string)($data['itemName'] ?? ''));
+    if ($package === 'من المنيو' && $itemName === '') json_out(['success' => false, 'message' => 'اختر الصنف من المنيو']);
     $meals = (int)($data['meals'] ?? 0);
     $price = (float)($data['price'] ?? 0);
     $notes = trim((string)($data['notes'] ?? ''));
@@ -999,8 +1215,9 @@ function api_add_company_order($data) {
     if ($price <= 0) json_out(['success' => false, 'message' => 'أدخل قيمة الوجبة']);
 
     $total = $meals * $price;
-    $stmt = $db->prepare('INSERT INTO company_orders (company_name, department, package, meals, price, total, notes, order_date, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->execute([$company, $department, $package, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username']]);
+    $stmt = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$company, $department, $package, $package === 'من المنيو' ? $itemName : $package, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username']]);
+    log_activity('إضافة طلب شركة', 'طلب شركة', $company, $package . ($package === 'من المنيو' ? ' (' . $itemName . ')' : '') . ' × ' . $meals . ' = ' . $total . ' ج.م');
     json_out(['success' => true, 'message' => 'تم تسجيل طلب الشركة بنجاح', 'total' => $total]);
 }
 

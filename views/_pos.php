@@ -7,6 +7,7 @@
  * =====================================================
  */
 $posActive = $posActive ?? false;
+$posAllowCompany = $posAllowCompany ?? false;
 ?>
 <style>
     .pos-wrap { display:flex; flex-direction:column; }
@@ -44,6 +45,10 @@ $posActive = $posActive ?? false;
     }
     .type-toggle button.active.dinein { background:#e5f0ff; border-color:#007aff; color:#007aff; }
     .type-toggle button.active.delivery { background:#fff3e0; border-color:#ff9500; color:#ff9500; }
+    .type-toggle button.active.company { background:#e7f8ec; border-color:#34c759; color:#34c759; }
+    .pos-company { display:none; margin-bottom:8px; }
+    .pos-company.show { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .pos-company input { padding:9px 11px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:12.5px; background:var(--bg); }
     .pos-submit-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .pos-total { font-size:16px; font-weight:800; color:var(--primary); }
     .pos-submit { flex:1; background:linear-gradient(90deg,var(--primary),var(--primary-dark)); color:#fff; border:none; padding:13px; border-radius:12px; font-weight:800; font-size:13.5px; cursor:pointer; font-family:inherit; }
@@ -61,7 +66,9 @@ $posActive = $posActive ?? false;
     <div class="type-toggle">
       <button class="dinein active" id="btnDinein" onclick="setOrderType('صالة')">🍽️ صالة</button>
       <button class="delivery" id="btnDelivery" onclick="setOrderType('دليفري')">🛵 دليفري</button>
+      <?php if ($posAllowCompany): ?><button class="company" id="btnCompany" onclick="setOrderType('شركات')">🏢 شركات</button><?php endif; ?>
     </div>
+    <?= $posAllowCompany ? '<div class="pos-company" id="posCompanyWrap"><input id="posCompany" placeholder="🏢 اسم الشركة (إجباري)"><input id="posDepartment" placeholder="🏬 القسم (اختياري)"></div>' : '' ?>
     <div class="pos-fields">
       <input id="posCustomer" placeholder="اسم العميل (اختياري)">
       <input id="posPhone" placeholder="رقم الهاتف (لواتساب)">
@@ -131,7 +138,11 @@ $posActive = $posActive ?? false;
     posOrderType = type;
     document.getElementById('btnDinein').classList.toggle('active', type === 'صالة');
     document.getElementById('btnDelivery').classList.toggle('active', type === 'دليفري');
+    var btnCo = document.getElementById('btnCompany');
+    if (btnCo) btnCo.classList.toggle('active', type === 'شركات');
     document.getElementById('posAddressWrap').classList.toggle('show', type === 'دليفري');
+    var coWrap = document.getElementById('posCompanyWrap');
+    if (coWrap) coWrap.classList.toggle('show', type === 'شركات');
     renderPosCart();
   };
 
@@ -163,6 +174,10 @@ $posActive = $posActive ?? false;
   window.submitPosOrder = async function () {
     if (!posCart.length) { alert('أضف أصنافًا أولًا'); return; }
     var address = document.getElementById('posAddress').value.trim();
+    var companyName = '', department = '';
+    var coEl = document.getElementById('posCompany');
+    if (coEl) { companyName = coEl.value.trim(); department = (document.getElementById('posDepartment').value || '').trim(); }
+    if (posOrderType === 'شركات' && !companyName) { alert('أدخل اسم الشركة'); return; }
     if (posOrderType === 'دليفري') {
       var dphone = document.getElementById('posPhone').value.trim();
       if (!dphone || !address) { alert('طلبات الدليفري تتطلب رقم الهاتف والعنوان'); return; }
@@ -177,12 +192,14 @@ $posActive = $posActive ?? false;
         notes: document.getElementById('posNotes').value.trim(),
         address: address,
         orderType: posOrderType,
+        companyName: companyName,
+        department: department,
       });
       btn.disabled = false;
       if (res.success) {
         posCart = [];
         renderPosCart();
-        ['posCustomer', 'posPhone', 'posNotes', 'posAddress'].forEach(function (id) { document.getElementById(id).value = ''; });
+        ['posCustomer', 'posPhone', 'posNotes', 'posAddress', 'posCompany', 'posDepartment'].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
         alert('تم إنشاء الطلب: ' + res.orderId);
         if (confirm('فتح فاتورة الطلب؟')) window.open('?page=invoice&id=' + encodeURIComponent(res.orderId), '_blank');
         if (typeof window.posAfterSubmit === 'function') window.posAfterSubmit(res);

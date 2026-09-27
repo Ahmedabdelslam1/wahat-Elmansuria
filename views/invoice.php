@@ -185,7 +185,7 @@
         document.getElementById('orderDate').textContent = o.created_at || '-';
         document.getElementById('customerName').textContent = o.customer_name || '-';
         document.getElementById('customerPhone').textContent = o.phone || '-';
-        document.getElementById('orderType').textContent = o.order_type === 'دليفري' ? '🛵 دليفري' : '🍽️ صالة';
+        document.getElementById('orderType').textContent = o.order_type === 'دليفري' ? '🛵 دليفري' : (o.order_type === 'شركات' ? '🏢 شركات' : '🍽️ صالة');
         document.getElementById('cashierName').textContent = (res.cashierName || '-') + '';
         if (o.order_type === 'دليفري' && o.address) {
           document.getElementById('addressBox').style.display = 'block';

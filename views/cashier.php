@@ -75,6 +75,7 @@
     .type-tag { font-size:10px; font-weight:800; padding:3px 9px; border-radius:16px; }
     .type-tag.dinein { background:#e5f0ff; color:#007aff; }
     .type-tag.delivery { background:#fff3e0; color:#ff9500; }
+    .type-tag.company { background:#e7f8ec; color:#34c759; }
     .order-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
     .order-items { font-size: 12.5px; margin-bottom: 8px; line-height: 1.5; }
     .order-total { font-weight: 800; color: var(--primary); font-size: 14px; margin-bottom: 8px; }
@@ -134,7 +135,7 @@
   </div>
 
   <!-- POS: طلب جديد (شاشة مشتركة مع لوحة المدير) -->
-  <?php $posActive = true; include __DIR__ . '/_pos.php'; ?>
+  <?php $posActive = true; $posAllowCompany = true; include __DIR__ . '/_pos.php'; ?>
 
   <!-- الطلبات -->
   <div class="panel" id="panel-orders">
@@ -144,6 +145,7 @@
       <button class="filter-btn" onclick="loadOrders('قيد التحضير', this)">قيد التحضير</button>
       <button class="filter-btn" onclick="loadOrders('جاهز', this)">جاهز</button>
       <button class="filter-btn" onclick="loadOrders('تم التسليم', this)">تم التسليم</button>
+      <button class="filter-btn" onclick="loadOrders('ملغي', this)">ملغي</button>
     </div>
     <div class="orders" id="ordersList"><div class="empty">جاري التحميل...</div></div>
   </div>
@@ -160,10 +162,12 @@
       <div class="co-grid">
         <input class="wide" id="coCompany" placeholder="🏢 اسم الشركة" list="coCompaniesList">
         <input class="wide" id="coDepartment" placeholder="🏬 القسم / الموقع (اختياري)">
-        <select id="coPackage" onchange="coUpdateTotal()">
+        <select id="coPackage" onchange="coPackageChanged()">
           <option value="جافة ×50">وجبة جافة ×50</option>
           <option value="جافة ×100">وجبة جافة ×100</option>
+          <option value="من المنيو">🍽️ صنف من المنيو</option>
         </select>
+        <select id="coItem" style="display:none" onchange="coItemPicked()"></select>
         <input id="coMeals" type="number" min="1" placeholder="عدد الوجبات" oninput="coUpdateTotal()">
         <input id="coPrice" type="number" min="0" step="0.5" placeholder="قيمة الوجبة (ج.م)" oninput="coUpdateTotal()">
         <input id="coNotes" placeholder="ملاحظات (اختياري)">
@@ -290,6 +294,11 @@
     // بعد تسجيل طلب من شاشة POS: تحديث قائمة الطلبات والعدادات
     window.posAfterSubmit = function () { loadOrders(currentFilter); loadTodaySummary(); };
 
+    // بعد تعديل/إلغاء/حذف طلب: تحديث القائمة والعدادات
+    window.orderActionsRefresh = function () { loadOrders(currentFilter); };
+    let ordersCache = {};
+    function openOrderEditById(oid) { openOrderEdit(ordersCache[oid]); }
+
     // ===== الطلبات =====
     async function loadOrders(filter, btn) {
       if (btn) {
@@ -328,7 +337,7 @@
     }
     function updateTodayChips(orders) {
       const today = todayStr();
-      const todays = orders.filter(o => (o.created_at || '').slice(0, 10) === today);
+      const todays = orders.filter(o => (o.created_at || '').slice(0, 10) === today && o.status !== 'ملغي');
       const sales = todays.reduce((s, o) => s + Number(o.total || 0), 0);
       document.getElementById('tdOrders').textContent = todays.length;
       document.getElementById('tdSales').textContent = Math.round(sales);
@@ -342,10 +351,38 @@
       document.getElementById('coLiveTotal').textContent = (meals * price) + ' ج.م';
     }
 
+    async function coPackageChanged() {
+      const pkg = document.getElementById('coPackage').value;
+      const isMenu = pkg === 'من المنيو';
+      const sel = document.getElementById('coItem');
+      sel.style.display = isMenu ? 'block' : 'none';
+      if (isMenu && !sel.options.length) {
+        if (!cashierMenu.length) await loadMenu();
+        sel.innerHTML = '<option value="">— اختر الصنف —</option>' + cashierMenu.map(i =>
+          '<option value="' + esc(i.id) + '" data-price="' + esc(i.price) + '">' + esc(i.name) + ' (' + esc(i.price) + ' ج.م)</option>'
+        ).join('');
+      }
+      if (isMenu) coItemPicked(); else { document.getElementById('coPrice').value = ''; coUpdateTotal(); }
+    }
+
+    function coItemPicked() {
+      const sel = document.getElementById('coItem');
+      const opt = sel.options[sel.selectedIndex];
+      if (opt && opt.dataset.price) document.getElementById('coPrice').value = opt.dataset.price;
+      coUpdateTotal();
+    }
+
     async function submitCompanyOrder() {
       const companyName = document.getElementById('coCompany').value.trim();
       const department = document.getElementById('coDepartment').value.trim();
       const packageType = document.getElementById('coPackage').value;
+      let itemName = '';
+      if (packageType === 'من المنيو') {
+        const sel = document.getElementById('coItem');
+        const opt = sel.options[sel.selectedIndex];
+        if (!sel.value || !opt) { alert('اختر الصنف من المنيو'); return; }
+        itemName = opt.textContent.replace(/ \(.*\)/, '').trim();
+      }
       const meals = parseInt(document.getElementById('coMeals').value) || 0;
       const price = parseFloat(document.getElementById('coPrice').value) || 0;
       const notes = document.getElementById('coNotes').value.trim();
@@ -355,7 +392,7 @@
       const btn = document.getElementById('coSubmitBtn');
       btn.disabled = true;
       try {
-        const res = await api('add_company_order', { companyName, department, package: packageType, meals, price, notes });
+        const res = await api('add_company_order', { companyName, department, package: packageType, itemName, meals, price, notes });
         btn.disabled = false;
         if (res.success) {
           ['coDepartment', 'coMeals', 'coPrice', 'coNotes'].forEach(id => document.getElementById(id).value = '');
@@ -398,7 +435,7 @@
           <div class="co-body" id="coBody-${gi}">
             ${g.orders.map(o => `
               <div class="co-row">
-                <span><b>${esc(o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة</span>
+                <span><b>${esc(o.package === 'من المنيو' && o.item_name ? o.item_name : o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة</span>
                 <span><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.created_at)}${o.department ? ' · ' + esc(o.department) : ''}</span></span>
               </div>
             `).join('')}
@@ -419,6 +456,7 @@
       if (status === 'قيد التحضير') return 'preparing';
       if (status === 'جاهز') return 'ready';
       if (status === 'تم التسليم') return 'done';
+      if (status === 'ملغي') return 'cancelled';
       return '';
     }
 
@@ -428,18 +466,25 @@
         list.innerHTML = '<div class="empty">لا توجد طلبات</div>';
         return;
       }
+      ordersCache = {};
+      orders.forEach(o => { ordersCache[o.order_id] = o; });
       list.innerHTML = orders.map(o => {
         const sCls = statusClass(o.status);
         const isDelivery = o.order_type === 'دليفري';
+        const isCompany = o.order_type === 'شركات';
+        const tagCls = isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein');
+        const tagLabel = isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة');
         const itemsHtml = (o.items || []).map(i => esc(i.name) + ' × ' + esc(i.qty)).join('<br>');
         const date = o.created_at || '';
+        const canEdit = ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status);
         return `
           <div class="order-card ${sCls}">
             <div class="order-header">
               <span class="order-id">${esc(o.order_id)}</span>
-              <span class="type-tag ${isDelivery ? 'delivery' : 'dinein'}">${isDelivery ? '🛵 دليفري' : '🍽️ صالة'}</span>
+              <span class="type-tag ${tagCls}">${tagLabel}</span>
               <span class="order-status ${sCls}">${esc(o.status)}</span>
             </div>
+            ${isCompany && o.company_name ? '<div class="order-meta" style="color:#34c759;font-weight:800">🏢 ' + esc(o.company_name) + (o.department ? ' — ' + esc(o.department) : '') + '</div>' : ''}
             <div class="order-meta">${esc(o.customer_name)} | ${esc(o.phone || '-')} | ${esc(date)}</div>
             ${isDelivery && o.address ? '<div class="order-meta" style="color:#ef6c00">📍 ' + esc(o.address) + '</div>' : ''}
             <div class="order-items">${itemsHtml}</div>
@@ -449,11 +494,29 @@
               ${o.status === 'جديد' ? '<button class="btn-prep" onclick="updateStatus(\'' + esc(o.order_id) + '\', \'قيد التحضير\')">بدء التحضير</button>' : ''}
               ${o.status === 'قيد التحضير' ? '<button class="btn-ready" onclick="updateStatus(\'' + esc(o.order_id) + '\', \'جاهز\')">جاهز</button>' : ''}
               ${o.status === 'جاهز' ? '<button class="btn-done" onclick="updateStatus(\'' + esc(o.order_id) + '\', \'تم التسليم\')">تم التسليم</button>' : ''}
-              <button class="btn-prep" style="background:#e5f0ff;color:#007aff" onclick="window.open('?page=invoice&id=${encodeURIComponent(o.order_id)}', '_blank')">🖨️ فاتورة</button>
+              ${canEdit ? '<button class="act-btn act-edit" onclick="openOrderEditById(\'' + esc(o.order_id) + '\')">✏️ تعديل</button>' : ''}
+              ${canEdit ? '<button class="act-btn act-add" onclick="openOrderEditById(\'' + esc(o.order_id) + '\')">➕ إضافة</button>' : ''}
+              ${canEdit ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) cancelOrderDirect(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
+              <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) deleteOrderDirect(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
+              <button class="btn-prep" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️ فاتورة</button>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    async function cancelOrderDirect(orderId) {
+      try {
+        const res = await api('cancel_order', { orderId });
+        if (res.success) loadOrders(currentFilter); else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
+    async function deleteOrderDirect(orderId) {
+      try {
+        const res = await api('delete_order', { orderId });
+        if (res.success) loadOrders(currentFilter); else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
     }
 
     async function updateStatus(orderId, status) {
@@ -472,5 +535,6 @@
     loadOrders('all');
     setInterval(() => loadOrders(currentFilter), 12000);
   </script>
+  <?php include __DIR__ . '/_order_edit.php'; ?>
 </body>
 </html>

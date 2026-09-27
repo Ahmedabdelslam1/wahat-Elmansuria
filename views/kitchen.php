@@ -75,6 +75,7 @@
     .type-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
     .type-tag.dinein { background:#0d2a4a; color:#5ab0ff; }
     .type-tag.delivery { background:#3a2600; color:#ffb020; }
+    .type-tag.company { background:#e7f8ec; color:#34c759; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -184,11 +185,12 @@
         `<li><span>${esc(i.name)}</span><span class="qty">× ${esc(i.qty)}</span></li>`
       ).join('');
       const isDelivery = o.order_type === 'دليفري';
+      const isCompany = o.order_type === 'شركات';
       return `
         <div class="ticket">
           <div class="top">
             <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
-            <span class="type-tag ${isDelivery ? 'delivery' : 'dinein'}">${isDelivery ? '🛵 دليفري' : '🍽️ صالة'}</span>
+            <span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span>
             <span class="time">${timeOnly(o.created_at)}</span>
           </div>
           <ul>${items}</ul>

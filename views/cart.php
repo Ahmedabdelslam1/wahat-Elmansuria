@@ -127,13 +127,12 @@
   <div class="items" id="cartItems"></div>
 
   <div class="form-section" id="orderForm" style="display:none">
-    <div class="type-row">
-      <button id="cartDinein" class="active-dinein" onclick="setCartType('صالة')">🍽️ أكل في المطعم</button>
-      <button id="cartDelivery" onclick="setCartType('دليفري')">🛵 توصيل</button>
+    <div class="type-row" style="background:#fff3e0;border:1px solid #ff9500;border-radius:12px;padding:10px;text-align:center;font-weight:800;font-size:13px;color:#ef6c00">
+      🛵 كل طلبات الموقع تُوصل دليفري
     </div>
     <input type="text" id="customerName" placeholder="الاسم">
     <input type="tel" id="phone" placeholder="رقم الهاتف">
-    <input type="text" id="address" placeholder="📍 عنوان التوصيل" style="display:none">
+    <input type="text" id="address" placeholder="📍 عنوان التوصيل">
     <textarea id="notes" rows="2" placeholder="ملاحظات على الطلب (اختياري)"></textarea>
   </div>
 
@@ -148,7 +147,7 @@
 
   <script>
     let cart = JSON.parse(localStorage.getItem('wahat_cart') || '[]');
-    let cartType = 'صالة';
+    let cartType = 'دليفري';
     let cartDeliveryFee = 0;
 
     api('public_settings').then(res => {
@@ -158,14 +157,8 @@
       }
     }).catch(() => {});
 
-    function setCartType(t) {
-      cartType = t;
-      document.getElementById('cartDinein').className = t === 'صالة' ? 'active-dinein' : '';
-      document.getElementById('cartDelivery').className = t === 'دليفري' ? 'active-delivery' : '';
-      document.getElementById('address').style.display = t === 'دليفري' ? 'block' : 'none';
-      document.getElementById('address').required = t === 'دليفري';
-      render();
-    }
+    // الطلب أونلاين = دليفري دائمًا (تم إلغاء خيار الصالة)
+    function setCartType(t) { cartType = 'دليفري'; render(); }
 
     function render() {
       const container = document.getElementById('cartItems');

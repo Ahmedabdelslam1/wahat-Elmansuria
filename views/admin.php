@@ -84,6 +84,11 @@
     .role-badge.kitchen { background:#e7f8ec;color:#34c759; }
     .role-badge.customer { background:#e5f0ff;color:#007aff; }
     .menu-thumb { width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0; }
+    .act-btn { border:none; border-radius:8px; padding:5px 9px; font-size:10.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .act-edit { background:#e5f0ff; color:#007aff; }
+    .act-add { background:#e7f8ec; color:#34c759; }
+    .act-cancel { background:#fff3e0; color:#ef6c00; }
+    .act-del { background:#ffebe9; color:#ff3b30; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
@@ -240,6 +245,17 @@
         <button class="primary" style="background:#eee;color:#555" onclick="loadCompanyReportToday()">تقرير اليوم</button>
       </div>
       <div id="companyReportResult" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>👥 سجل عمليات المستخدمين (إضافة / تعديل / إلغاء / حذف)</h3>
+      <div class="co-date-row">
+        <div class="form-row"><label>من تاريخ</label><input type="date" id="auFrom"></div>
+        <div class="form-row"><label>إلى تاريخ</label><input type="date" id="auTo"></div>
+        <button class="primary" onclick="loadAuditReport()">عرض السجل</button>
+        <button class="primary" style="background:#eee;color:#555" onclick="loadAuditToday()">سجل اليوم</button>
+      </div>
+      <div id="auditResult" style="margin-top:12px"></div>
     </div>
   </div>
 
@@ -433,6 +449,26 @@
       loadDashboard();
     };
 
+    // بعد تعديل/إلغاء/حذف طلب: تحديث الطلبات واللوحة
+    window.orderActionsRefresh = function () {
+      loadAdminOrders();
+      loadDashboard();
+    };
+
+    async function adminCancelOrder(orderId) {
+      try {
+        const res = await api('cancel_order', { orderId });
+        if (res.success) { alert('تم إلغاء الطلب'); orderActionsRefresh(); } else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
+    async function adminDeleteOrder(orderId) {
+      try {
+        const res = await api('delete_order', { orderId });
+        if (res.success) { alert('تم حذف الطلب'); orderActionsRefresh(); } else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
     // ===== تقرير طلبات الشركات =====
     async function loadCompanyReportToday() {
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
@@ -472,13 +508,53 @@
               <div class="cg-body" id="cgBody-${gi}">
                 ${g.orders.map(o => `
                   <div class="cg-row">
-                    <span><b>${esc(o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة${o.department ? ' · 🏬 ' + esc(o.department) : ''}</span>
+                    <span><b>${esc(o.package === 'من المنيو' && o.item_name ? o.item_name : o.package)}</b> × ${o.meals} وجبة · ${o.price} ج.م للوجبة${o.department ? ' · 🏬 ' + esc(o.department) : ''}</span>
                     <span style="text-align:left"><b>${Math.round(o.total)} ج.م</b><br><span class="muted">${esc(o.order_date)} — ${esc(o.created_at.slice(11))} · بواسطة ${esc(o.created_by)}</span></span>
                   </div>
                 `).join('')}
               </div>
             </div>
           `).join('')}
+        `;
+      } catch (e) {
+        box.innerHTML = '<p style="font-size:13px">خطأ في الاتصال بالسيرفر</p>';
+      }
+    }
+
+    // ===== سجل عمليات المستخدمين =====
+    async function loadAuditToday() {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+      document.getElementById('auFrom').value = today;
+      document.getElementById('auTo').value = today;
+      loadAuditReport();
+    }
+
+    async function loadAuditReport() {
+      const from = document.getElementById('auFrom').value;
+      const to = document.getElementById('auTo').value;
+      const box = document.getElementById('auditResult');
+      if (!from || !to) { box.innerHTML = '<p style="font-size:13px;color:var(--muted)">اختر التاريخ من وإلى</p>'; return; }
+      box.innerHTML = '<p style="font-size:13px">جاري التحميل...</p>';
+      try {
+        const res = await api('audit_report', { from, to });
+        if (!res.success) { box.innerHTML = '<p style="font-size:13px">' + esc(res.message || 'خطأ') + '</p>'; return; }
+        if (!res.entries.length) { box.innerHTML = '<p style="font-size:13px;color:var(--muted)">لا توجد عمليات في هذه الفترة</p>'; return; }
+        box.innerHTML = `
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:8px">عدد العمليات: <b>${res.count}</b></p>
+          <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <tr style="background:var(--bg)"><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">الوقت</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">المستخدم</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">العملية</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">العنصر</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">التفاصيل</th></tr>
+            ${res.entries.map(e => `
+              <tr>
+                <td style="padding:8px;border-bottom:1px solid var(--border);white-space:nowrap">${esc(e.created_at)}</td>
+                <td style="padding:8px;border-bottom:1px solid var(--border);font-weight:800">${esc(e.username)}</td>
+                <td style="padding:8px;border-bottom:1px solid var(--border);font-weight:800;color:var(--primary);white-space:nowrap">${esc(e.action)}</td>
+                <td style="padding:8px;border-bottom:1px solid var(--border);white-space:nowrap">${esc(e.entity)} ${esc(e.entity_id ? '#' + e.entity_id : '')}</td>
+                <td style="padding:8px;border-bottom:1px solid var(--border)">${esc(e.details || '')}</td>
+              </tr>
+            `).join('')}
+          </table>
+          </div>
         `;
       } catch (e) {
         box.innerHTML = '<p style="font-size:13px">خطأ في الاتصال بالسيرفر</p>';
@@ -496,12 +572,23 @@
         const res = await api('get_orders', { status: '' });
         const box = document.getElementById('adminOrders');
         if (!res.success) { box.innerHTML = 'خطأ'; return; }
-        box.innerHTML = res.orders.slice(0, 30).map(o => `
-          <div class="user-row">
-            <span>${esc(o.order_id)} — ${esc(o.customer_name)}</span>
+      window.adminOrdersCache = {};
+      res.orders.slice(0, 30).forEach(o => { window.adminOrdersCache[o.order_id] = o; });
+      box.innerHTML = res.orders.slice(0, 30).map(o => {
+        const canEdit = ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status);
+        const typeLabel = o.order_type === 'شركات' ? '🏢' : (o.order_type === 'دليفري' ? '🛵' : '🍽️');
+        return `
+        <div class="user-row" ${o.status === 'ملغي' ? 'style="opacity:.55"' : ''}>
+          <span>${typeLabel} ${esc(o.order_id)} — ${esc(o.company_name || o.customer_name)}<br><span style="color:var(--muted);font-size:11px">${esc((o.items || []).map(i => i.name + '×' + i.qty).join('، '))}</span></span>
+          <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <strong>${o.status} · ${o.total} ج.م</strong>
-          </div>
-        `).join('') || '<p>لا توجد طلبات</p>';
+            ${canEdit ? '<button class="act-btn act-edit" onclick="openOrderEdit(window.adminOrdersCache[\'' + esc(o.order_id) + '\'])">✏️ تعديل</button>' : ''}
+            ${canEdit ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) adminCancelOrder(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
+            <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) adminDeleteOrder(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
+            <button class="act-btn act-add" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️</button>
+          </span>
+        </div>`;
+      }).join('') || '<p>لا توجد طلبات</p>';
       } catch (e) {}
     }
 
@@ -685,5 +772,6 @@
 
     loadDashboard();
   </script>
+  <?php include __DIR__ . '/_order_edit.php'; ?>
 </body>
 </html>
