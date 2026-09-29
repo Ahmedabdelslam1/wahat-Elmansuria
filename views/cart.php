@@ -112,6 +112,7 @@
     }
   </style>
 <script src="?asset=api.js"></script>
+<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="topbar">
@@ -282,5 +283,6 @@
       document.body.appendChild(d);
     }
   </script>
+<script src="?asset=app.js"></script>
 </body>
 </html>
