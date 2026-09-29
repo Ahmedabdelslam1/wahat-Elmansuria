@@ -115,6 +115,7 @@
     @media(max-width:600px){.menu-summary{grid-template-columns:1fr 1fr}.menu-grid{grid-template-columns:1fr}.menu-toolbar{align-items:stretch}.menu-search,.menu-filter,.menu-add-btn{width:100%}}
   </style>
 <script src="?asset=api.js"></script>
+<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
@@ -882,5 +883,6 @@
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
   <?php include __DIR__ . '/_alerts.php'; ?>
+<script src="?asset=app.js"></script>
 </body>
 </html>
