@@ -89,6 +89,30 @@
     .act-add { background:#e7f8ec; color:#34c759; }
     .act-cancel { background:#fff3e0; color:#ef6c00; }
     .act-del { background:#ffebe9; color:#ff3b30; }
+    .menu-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+    .menu-search{flex:1;min-width:220px;position:relative}
+    .menu-search input{width:100%;padding:13px 42px 13px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;font-family:inherit;font-size:13px;outline:none}
+    .menu-search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,59,48,.08)}
+    .menu-search:before{content:'🔎';position:absolute;right:14px;top:11px;font-size:16px;z-index:1}
+    .menu-filter{min-width:170px;padding:12px;border:1px solid var(--border);border-radius:14px;background:#fff;font-family:inherit;font-weight:700}
+    .menu-add-btn{white-space:nowrap}
+    .menu-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+    .menu-stat{background:linear-gradient(135deg,#fff,#f8f9fc);border:1px solid var(--border);border-radius:14px;padding:12px}
+    .menu-stat .v{font-size:20px;font-weight:800}.menu-stat .l{font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
+    .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
+    .menu-item-card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;transition:.18s;box-shadow:0 3px 12px rgba(20,20,30,.04)}
+    .menu-item-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,20,30,.08)}
+    .menu-item-image{height:145px;background:linear-gradient(135deg,#f1f2f6,#e8e9ef);position:relative;overflow:hidden}
+    .menu-item-image img{width:100%;height:100%;object-fit:cover}
+    .menu-status{position:absolute;top:10px;left:10px;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:800;background:#e7f8ec;color:#198754}
+    .menu-status.off{background:#ffebe9;color:#d32f2f}
+    .menu-item-body{padding:12px}.menu-item-cat{font-size:10px;color:var(--primary);font-weight:800;margin-bottom:5px}
+    .menu-item-name{font-size:15px;font-weight:800;margin-bottom:5px}.menu-item-desc{font-size:11px;color:var(--muted);min-height:30px;line-height:1.5}
+    .menu-item-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .menu-price{font-size:17px;font-weight:800}.menu-price small{font-size:9px;color:var(--muted)}
+    .menu-actions{display:flex;gap:5px}.menu-actions button{border:0;border-radius:9px;padding:7px 9px;font-family:inherit;font-weight:800;font-size:10px;cursor:pointer}
+    .menu-empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
+    @media(max-width:600px){.menu-summary{grid-template-columns:1fr 1fr}.menu-grid{grid-template-columns:1fr}.menu-toolbar{align-items:stretch}.menu-search,.menu-filter,.menu-add-btn{width:100%}}
   </style>
 <script src="?asset=api.js"></script>
 </head>
@@ -156,15 +180,31 @@
   <!-- Menu Management -->
   <div class="panel" id="panel-menu">
     <div class="card">
-      <h3 id="itemFormTitle">إضافة صنف جديد</h3>
-      <div class="form-row"><label>الاسم</label><input id="itemName"></div>
-      <div class="form-row"><label>القسم</label><input id="itemCat" placeholder="مثل: المشويات بالكيلو"></div>
-      <div class="form-row"><label>السعر (ج.م)</label><input id="itemPrice" type="number"></div>
-      <div class="form-row"><label>الوصف (اختياري)</label><input id="itemDesc"></div>
-      <div class="form-row"><label>رابط صورة حقيقية (اختياري - يُستخدم صورة القسم تلقائيًا إن تُرك فارغًا)</label><input id="itemImage" placeholder="https://..."></div>
-      <input type="hidden" id="itemId" value="">
-      <button class="primary" id="saveItemBtn" onclick="saveItem()">حفظ الصنف</button>
-      <button class="primary" id="cancelEditBtn" style="background:#eee;color:#555;display:none;margin-right:6px" onclick="cancelEditItem()">إلغاء</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div><h3 style="font-size:18px;margin-bottom:3px">🍽️ إدارة المنيو</h3><div style="font-size:11px;color:var(--muted)">إدارة الأصناف والأسعار والأقسام من مكان واحد</div></div>
+        <button class="primary menu-add-btn" onclick="newMenuItem()">＋ إضافة صنف جديد</button>
+      </div>
+      <div class="menu-summary">
+        <div class="menu-stat"><div class="v" id="menuTotalCount">0</div><div class="l">إجمالي الأصناف</div></div>
+        <div class="menu-stat"><div class="v" id="menuActiveCount">0</div><div class="l">أصناف متاحة</div></div>
+        <div class="menu-stat"><div class="v" id="menuCategoryCount">0</div><div class="l">الأقسام</div></div>
+      </div>
+      <div class="menu-toolbar">
+        <div class="menu-search"><input id="menuSearch" placeholder="ابحث باسم الصنف أو القسم..." oninput="filterMenuAdmin()"></div>
+        <select id="menuCategoryFilter" class="menu-filter" onchange="filterMenuAdmin()"><option value="">كل الأقسام</option></select>
+        <select id="menuStatusFilter" class="menu-filter" onchange="filterMenuAdmin()"><option value="">كل الحالات</option><option value="1">متاح</option><option value="0">مخفي</option></select>
+      </div>
+      <div id="itemFormCard" style="display:none;border:1px solid #ffd5d2;background:#fffafa;border-radius:16px;padding:15px;margin-bottom:14px">
+        <h3 id="itemFormTitle" style="margin-bottom:12px">إضافة صنف جديد</h3>
+        <div class="form-row"><label>اسم الصنف</label><input id="itemName"></div>
+        <div class="form-row"><label>القسم</label><input id="itemCat" placeholder="مثل: المشويات بالكيلو"></div>
+        <div class="form-row"><label>السعر (ج.م)</label><input id="itemPrice" type="number" min="0" step="0.01"></div>
+        <div class="form-row"><label>الوصف</label><input id="itemDesc"></div>
+        <div class="form-row"><label>رابط الصورة</label><input id="itemImage" placeholder="https://..."></div>
+        <input type="hidden" id="itemId" value="">
+        <button class="primary" id="saveItemBtn" onclick="saveItem()">💾 حفظ الصنف</button>
+        <button class="primary" id="cancelEditBtn" style="background:#eee;color:#555;display:none;margin-right:6px" onclick="cancelEditItem()">إلغاء</button>
+      </div>
     </div>
     <div id="menuList" class="card" style="display:none"></div>
   </div>
