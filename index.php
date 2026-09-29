@@ -7,9 +7,16 @@ require_once __DIR__ . '/lib.php';
 boot_session();
 
 // ملف ثابت: مكتبة الاتصال بالـ API
-if (($_GET['asset'] ?? '') === 'api.js') {
-    header('Content-Type: application/javascript; charset=utf-8');
-    readfile(__DIR__ . '/assets/api.js');
+$asset = (string)($_GET['asset'] ?? '');
+$assetMap = [
+    'api.js' => ['assets/api.js', 'application/javascript; charset=utf-8'],
+    'app.js' => ['assets/app.js', 'application/javascript; charset=utf-8'],
+    'app.css' => ['assets/app.css', 'text/css; charset=utf-8'],
+];
+if (isset($assetMap[$asset])) {
+    header('Content-Type: ' . $assetMap[$asset][1]);
+    header('Cache-Control: public, max-age=3600');
+    readfile(__DIR__ . '/' . $assetMap[$asset][0]);
     exit;
 }
 
