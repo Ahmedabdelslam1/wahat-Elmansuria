@@ -890,6 +890,27 @@ function api_toggle_item($data) {
     json_out(['success' => true, 'message' => !empty($data['active']) ? 'تم تفعيل الصنف' : 'تم إخفاء الصنف']);
 }
 
+function api_delete_item($data) {
+    require_role(['admin']);
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) json_out(['success' => false, 'message' => 'الصنف غير صحيح']);
+
+    $st = $db->prepare('SELECT id, name, category, price FROM menu WHERE id = ?');
+    $st->execute([$id]);
+    $item = $st->fetch();
+    if (!$item) json_out(['success' => false, 'message' => 'الصنف غير موجود']);
+
+    $del = $db->prepare('DELETE FROM menu WHERE id = ?');
+    $del->execute([$id]);
+    if ((int)$del->rowCount() !== 1) {
+        json_out(['success' => false, 'message' => 'تعذر حذف الصنف']);
+    }
+
+    log_activity('حذف صنف', 'منيو', (string)$id, $item['name'] . ' — ' . $item['category'] . ' — ' . $item['price'] . ' ج.م');
+    json_out(['success' => true, 'message' => 'تم حذف الصنف']);
+}
+
 function api_add_user($data) {
     require_role(['admin']);
     $db = db();
