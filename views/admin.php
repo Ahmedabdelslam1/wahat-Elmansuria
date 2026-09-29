@@ -617,7 +617,10 @@
                 <span style="color:var(--muted);font-size:12px">${esc(i.category)} — ${i.price} ج.م</span>
               </div>
             </div>
-            <button onclick='editItem(${JSON.stringify(i).replace(/'/g, "&#39;")})'>تعديل</button>
+            <span style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="act-edit" onclick='editItem(${JSON.stringify(i).replace(/'/g, "&#39;")})'>✏️ تعديل</button>
+              <button class="act-del" onclick="deleteItem(${i.id}, '${String(i.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">🗑️ حذف</button>
+            </span>
           `;
           container.appendChild(row);
         });
@@ -636,6 +639,22 @@
       document.getElementById('cancelEditBtn').style.display = 'inline-block';
       document.getElementById('saveItemBtn').textContent = 'حفظ التعديل';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteItem(id, name) {
+      if (!confirm('هل أنت متأكد من حذف الصنف «' + name + '» نهائيًا؟\n\nسيتم حذفه من المنيو ولن يظهر للعملاء.')) return;
+      try {
+        const res = await api('delete_item', { id });
+        if (res.success) {
+          if (editingItemId === id) cancelEditItem();
+          loadMenuAdmin();
+          alert('تم حذف الصنف بنجاح');
+        } else {
+          alert(res.message || 'تعذر حذف الصنف');
+        }
+      } catch (e) {
+        alert('خطأ في الاتصال بالسيرفر');
+      }
     }
 
     function cancelEditItem() {
