@@ -106,6 +106,7 @@
     .empty { text-align:center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
   </style>
 <script src="?asset=api.js"></script>
+<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
@@ -294,5 +295,6 @@
     setInterval(loadCompanyOrders, 8000);
   </script>
   <?php include __DIR__ . '/_alerts.php'; ?>
+<script src="?asset=app.js"></script>
 </body>
 </html>
