@@ -1,9 +1,12 @@
 // واحة المنصورية - Service Worker (تشغيل كـ PWA على ويب وأندرويد)
-const CACHE = 'wahat-v1';
+const CACHE = 'wahat-v2';
 const OFFLINE_ASSETS = [
   'index.php?page=home',
   'manifest.json',
   'assets/icons/icon-192.png',
+  'index.php?asset=app.css',
+  'index.php?asset=app.js',
+  'index.php?asset=api.js',
 ];
 
 self.addEventListener('install', (e) => {
