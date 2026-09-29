@@ -103,6 +103,7 @@
     .roles-hint { margin-top: 18px; font-size: 10.5px; color: #6b6b7a; line-height: 1.7; }
   </style>
 <script src="?asset=api.js"></script>
+<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <a class="back-fab" href="?page=home" title="رجوع للرئيسية">
@@ -160,5 +161,6 @@
     document.getElementById('password').addEventListener('keypress', enterLogin);
     document.getElementById('username').addEventListener('keypress', enterLogin);
   </script>
+<script src="?asset=app.js"></script>
 </body>
 </html>
