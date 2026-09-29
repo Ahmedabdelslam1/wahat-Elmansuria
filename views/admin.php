@@ -406,6 +406,61 @@
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
     }
 
+    let adminMenuItems = [];
+
+    function newMenuItem() {
+      editingItemId = null;
+      document.getElementById('itemFormCard').style.display = 'block';
+      document.getElementById('itemFormTitle').textContent = '➕ إضافة صنف جديد';
+      document.getElementById('itemId').value = '';
+      ['itemName','itemCat','itemPrice','itemDesc','itemImage'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('cancelEditBtn').style.display = 'none';
+      document.getElementById('itemName').focus();
+    }
+
+    function filterMenuAdmin() {
+      const q = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
+      const cat = document.getElementById('menuCategoryFilter').value;
+      const status = document.getElementById('menuStatusFilter').value;
+      const rows = adminMenuItems.filter(i =>
+        (!q || String(i.name||'').toLowerCase().includes(q) || String(i.category||'').toLowerCase().includes(q)) &&
+        (!cat || String(i.category||'') === cat) &&
+        (status === '' || String(i.active ? 1 : 0) === status)
+      );
+      renderMenuCards(rows);
+    }
+
+    function renderMenuCards(items) {
+      const box = document.getElementById('menuList');
+      box.style.display = 'block';
+      if (!items.length) {
+        box.innerHTML = '<div class="menu-empty">🔎 لا توجد أصناف مطابقة للبحث أو الفلاتر</div>';
+        return;
+      }
+      box.innerHTML = '<div class="menu-grid">' + items.map(i => {
+        const image = esc(i.image || '');
+        const active = Number(i.active) === 1;
+        return '<div class="menu-item-card">' +
+          '<div class="menu-item-image">' +
+          (image ? '<img src="' + image + '" alt="' + esc(i.name) + '" onerror="this.style.display=\'none\'">' : '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:42px">🍽️</div>') +
+          '<span class="menu-status ' + (active ? '' : 'off') + '">' + (active ? '● متاح' : '● مخفي') + '</span>' +
+          '</div><div class="menu-item-body">' +
+          '<div class="menu-item-cat">' + esc(i.category || 'بدون قسم') + '</div>' +
+          '<div class="menu-item-name">' + esc(i.name) + '</div>' +
+          '<div class="menu-item-desc">' + esc(i.descr || i.desc || 'لا يوجد وصف') + '</div>' +
+          '<div class="menu-item-foot"><div class="menu-price">' + Number(i.price || 0).toLocaleString('ar-EG') + ' <small>ج.م</small></div>' +
+          '<div class="menu-actions">' +
+          '<button class="act-edit" onclick="editItemById(' + Number(i.id) + ')">✏️ تعديل</button>' +
+          '<button class="act-del" onclick="deleteItem(' + Number(i.id) + ', \' ' + String(i.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')">🗑️</button>' +
+          '</div></div></div></div>';
+      }).join('') + '</div>';
+    }
+
+    function editItemById(id) {
+      const i = adminMenuItems.find(x => Number(x.id) === Number(id));
+      if (i) editItem(i);
+    }
+
     // ===== Dashboard =====
     function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
 
