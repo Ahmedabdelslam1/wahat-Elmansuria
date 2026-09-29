@@ -698,66 +698,43 @@
       try {
         const res = await api('menu');
         if (!res.success) return;
-        const container = document.getElementById('menuList');
-        container.style.display = 'block';
-        container.innerHTML = '<h3 style="margin-bottom:10px">الأصناف الحالية (' + res.items.length + ')</h3>';
-        res.items.forEach(i => {
-          const row = document.createElement('div');
-          row.className = 'menu-row';
-          row.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:180px">
-              <img class="menu-thumb" src="${i.image}" alt="">
-              <div>
-                <strong>${esc(i.name)}</strong><br>
-                <span style="color:var(--muted);font-size:12px">${esc(i.category)} — ${i.price} ج.م</span>
-              </div>
-            </div>
-            <span style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="act-edit" onclick='editItem(${JSON.stringify(i).replace(/'/g, "&#39;")})'>✏️ تعديل</button>
-              <button class="act-del" onclick="deleteItem(${i.id}, '${String(i.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">🗑️ حذف</button>
-            </span>
-          `;
-          container.appendChild(row);
-        });
-      } catch (e) {}
+        adminMenuItems = res.items || [];
+        const categories = [...new Set(adminMenuItems.map(i => String(i.category || '').trim()).filter(Boolean))].sort();
+        const select = document.getElementById('menuCategoryFilter');
+        const current = select.value;
+        select.innerHTML = '<option value="">كل الأقسام</option>' + categories.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+        if (categories.includes(current)) select.value = current;
+        document.getElementById('menuTotalCount').textContent = adminMenuItems.length;
+        document.getElementById('menuActiveCount').textContent = adminMenuItems.filter(i => Number(i.active) === 1).length;
+        document.getElementById('menuCategoryCount').textContent = categories.length;
+        filterMenuAdmin();
+      } catch (e) {
+        document.getElementById('menuList').innerHTML = '<div class="menu-empty">تعذر تحميل المنيو</div>';
+      }
     }
 
     function editItem(item) {
       editingItemId = item.id;
-      document.getElementById('itemFormTitle').textContent = 'تعديل صنف: ' + item.name;
+      document.getElementById('itemFormCard').style.display = 'block';
+      document.getElementById('itemFormTitle').textContent = '✏️ تعديل صنف: ' + item.name;
       document.getElementById('itemId').value = item.id;
       document.getElementById('itemName').value = item.name;
-      document.getElementById('itemCat').value = item.category;
+      document.getElementById('itemCat').value = item.category || '';
       document.getElementById('itemPrice').value = item.price;
-      document.getElementById('itemDesc').value = item.desc || '';
+      document.getElementById('itemDesc').value = item.desc || item.descr || '';
       document.getElementById('itemImage').value = item.image || '';
       document.getElementById('cancelEditBtn').style.display = 'inline-block';
-      document.getElementById('saveItemBtn').textContent = 'حفظ التعديل';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    async function deleteItem(id, name) {
-      if (!confirm('هل أنت متأكد من حذف الصنف «' + name + '» نهائيًا؟\n\nسيتم حذفه من المنيو ولن يظهر للعملاء.')) return;
-      try {
-        const res = await api('delete_item', { id });
-        if (res.success) {
-          if (editingItemId === id) cancelEditItem();
-          loadMenuAdmin();
-          alert('تم حذف الصنف بنجاح');
-        } else {
-          alert(res.message || 'تعذر حذف الصنف');
-        }
-      } catch (e) {
-        alert('خطأ في الاتصال بالسيرفر');
-      }
+      document.getElementById('saveItemBtn').textContent = '💾 حفظ التعديل';
+      document.getElementById('itemFormCard').scrollIntoView({behavior:'smooth',block:'start'});
     }
 
     function cancelEditItem() {
       editingItemId = null;
+      document.getElementById('itemFormCard').style.display = 'none';
       document.getElementById('itemFormTitle').textContent = 'إضافة صنف جديد';
       ['itemId','itemName','itemCat','itemPrice','itemDesc','itemImage'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('cancelEditBtn').style.display = 'none';
-      document.getElementById('saveItemBtn').textContent = 'حفظ الصنف';
+      document.getElementById('saveItemBtn').textContent = '💾 حفظ الصنف';
     }
 
     async function saveItem() {
@@ -767,7 +744,7 @@
         category: document.getElementById('itemCat').value.trim(),
         price: parseFloat(document.getElementById('itemPrice').value) || 0,
         desc: document.getElementById('itemDesc').value.trim(),
-        image: document.getElementById('itemImage').value.trim(),
+        image: document.getElementById('itemImage').value.trim()
       };
       if (!item.name || !item.price) { alert('أدخل الاسم والسعر'); return; }
       const btn = document.getElementById('saveItemBtn');
@@ -778,6 +755,18 @@
         if (res.success) { cancelEditItem(); loadMenuAdmin(); }
         else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
+    }
+
+    async function deleteItem(id, name) {
+      if (!confirm('هل أنت متأكد من حذف الصنف «' + name + '» نهائيًا؟\n\nسيتم حذفه من المنيو ولن يظهر للعملاء.')) return;
+      try {
+        const res = await api('delete_item', { id });
+        if (res.success) {
+          if (Number(editingItemId) === Number(id)) cancelEditItem();
+          await loadMenuAdmin();
+          alert('تم حذف الصنف بنجاح');
+        } else alert(res.message || 'تعذر حذف الصنف');
+      } catch (e) { alert('خطأ في الاتصال بالسيرفر'); }
     }
 
     // ===== Users management =====
