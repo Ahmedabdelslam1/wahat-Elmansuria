@@ -104,6 +104,7 @@
 
   </style>
 <script src="?asset=api.js"></script>
+<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
@@ -550,5 +551,6 @@
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
   <?php include __DIR__ . '/_alerts.php'; ?>
+<script src="?asset=app.js"></script>
 </body>
 </html>
