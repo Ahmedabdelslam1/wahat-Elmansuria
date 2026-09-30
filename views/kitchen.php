@@ -43,7 +43,7 @@
     .co-section-head { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; gap:8px; }
     .co-section-head h3 { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .co-badge { background:#fff3e0; color:#c77700; border-radius:20px; padding:3px 11px; font-size:11.5px; font-weight:800; }
-    .co-toggle { width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:#fff3e0; color:#c77700; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; transition:transform .2s, box-shadow .2s; box-shadow:0 0 8px -1px rgba(255,149,0,0.4); }
+    .co-toggle { width:26px; height:26px; border-radius:50%; border:1px solid var(--border); background:#fff3e0; color:#c77700; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; transition:transform .2s, box-shadow .2s; box-shadow:0 0 8px -1px rgba(255,149,0,0.4); }
     .co-section.expanded .co-toggle { transform:rotate(180deg); box-shadow:0 0 12px 0 rgba(255,149,0,0.7); }
     .co-body { display:none; margin-top:10px; }
     .co-section.expanded .co-body { display:block; }
@@ -99,19 +99,23 @@
     .col.prep .ticket { border-right: 5px solid var(--prep); }
     .col.ready .ticket { border-right: 5px solid var(--ready); }
 
-    .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; flex-wrap:wrap; gap:6px; }
-    .ticket .oid { font-weight: 800; font-size: 15px; }
-    .ticket .time { font-size: 11px; color: var(--muted); }
-    .type-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
+    .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; flex-wrap:wrap; gap:6px; }
+    .ticket .oid { font-weight: 800; font-size: 13px; }
+    .ticket .time { font-size: 10px; color: var(--muted); }
+    .type-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; }
     .type-tag.dinein { background:#e8f2ff; color:#1c6fd9; }
     .type-tag.delivery { background:#fff3e0; color:#c77700; }
     .type-tag.company { background:#e7f8ec; color:#1f9e46; }
-    .ticket .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-    .status-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
+    .ticket .tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+    .status-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; }
     .status-tag.st-new { background:rgba(255,59,48,0.12); color:var(--new); }
     .status-tag.st-prep { background:rgba(224,134,0,0.12); color:var(--prep); }
     .status-tag.st-ready { background:rgba(31,158,70,0.12); color:var(--ready); }
     .status-tag.st-done { background:rgba(58,53,64,0.1); color:#3a3540; }
+    .ord-check { width:16px; height:16px; cursor:pointer; accent-color:var(--primary); }
+    .bulk-bar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 4px 10px; font-size:11px; flex-wrap:wrap; }
+    .bulk-bar label { display:flex; align-items:center; gap:5px; font-weight:700; color:var(--muted); cursor:pointer; }
+    .bulk-bar .toolbar-btn { font-size:10.5px; padding:5px 8px; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -134,6 +138,7 @@
     .co-toggle, .stat-chip, .ticket { color: var(--text); }
   </style>
 <script src="?asset=api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
   <div class="header">
@@ -174,7 +179,8 @@
         <button onclick="coChangeDay(1)">يوم تالي ▶</button>
         <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
         <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
-        <button class="toolbar-btn wa-btn" onclick="coShareWhatsapp()">📤 إرسال</button>
+        <button class="toolbar-btn wa-btn" onclick="coShareWhatsapp()">📤 نص</button>
+        <button class="toolbar-btn wa-btn" onclick="coShareImage()">📷 صورة</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
@@ -182,20 +188,24 @@
 
   <div class="toolbar-row">
     <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersShareWhatsapp()">📤 إرسال جدول الطلبات</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersShareWhatsapp()">📤 نص</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersShareImage()">📷 صورة</button>
   </div>
 
   <div class="board">
     <div class="col new">
       <div class="col-head"><span>🔴 جديد</span><span class="count" id="cNew">0</span></div>
+      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listNew', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listNew', 'قيد التحضير')">✅ استلام المحدد</button></div>
       <div id="listNew"></div>
     </div>
     <div class="col prep">
       <div class="col-head"><span>🟠 قيد التحضير</span><span class="count" id="cPrep">0</span></div>
+      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listPrep', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listPrep', 'جاهز')">🟢 تجهيز المحدد</button></div>
       <div id="listPrep"></div>
     </div>
     <div class="col ready">
       <div class="col-head"><span>🟢 جاهز للتسليم</span><span class="count" id="cReady">0</span></div>
+      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listReady', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listReady', 'تم التسليم')">📦 تسليم المحدد</button></div>
       <div id="listReady"></div>
     </div>
   </div>
@@ -236,6 +246,7 @@
       return `
         <div class="ticket">
           <div class="top">
+            <input type="checkbox" class="ord-check" data-oid="${esc(o.order_id)}">
             <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
             <span class="time">${timeOnly(o.created_at)}</span>
           </div>
@@ -271,21 +282,34 @@
       w.document.close();
     }
 
+    function buildCoTableHtml(groups) {
+      let html = '';
+      groups.forEach(g => {
+        html += `<h3 style="font-size:13px;margin:14px 0 6px;color:#1f9e46">🏢 ${esc(g.company)}</h3><table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px"><thead><tr><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">القسم</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">الوجبة</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">العدد</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">ملاحظات</th></tr></thead><tbody>`;
+        g.orders.forEach(o => {
+          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+          html += `<tr><td style="border:1px solid #ccc;padding:6px 8px">${o.department ? esc(o.department) : '—'}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(label)}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.meals}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.notes ? esc(o.notes) : '—'}</td></tr>`;
+        });
+        html += `</tbody></table><div style="font-weight:800;margin-top:4px">إجمالي عدد الوجبات: ${g.totalMeals} وجبة</div>`;
+      });
+      return html;
+    }
+
     function coPrintTable() {
       const groups = window.__lastCoGroups || [];
       if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
-      let html = '';
-      groups.forEach(g => {
-        html += `<h3>🏢 ${esc(g.company)}</h3><table><thead><tr><th>القسم</th><th>الوجبة</th><th>العدد</th><th>ملاحظات</th></tr></thead><tbody>`;
-        g.orders.forEach(o => {
-          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
-          html += `<tr><td>${o.department ? esc(o.department) : '—'}</td><td>${esc(label)}</td><td>${o.meals}</td><td>${o.notes ? esc(o.notes) : '—'}</td></tr>`;
-        });
-        html += `</tbody></table><div class="sum">إجمالي عدد الوجبات: ${g.totalMeals} وجبة</div>`;
-      });
-      printHtmlDoc('طلبات الشركات - ' + (window.__lastCoDate || ''), html);
+      printHtmlDoc('طلبات الشركات - ' + (window.__lastCoDate || ''), buildCoTableHtml(groups));
     }
     window.coPrintTable = coPrintTable;
+
+    async function coShareImage() {
+      const groups = window.__lastCoGroups || [];
+      if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
+      const title = '🏢 طلبات الشركات - ' + (window.__lastCoDate || '');
+      const blob = await tableToImageBlob(title, buildCoTableHtml(groups));
+      await sendImageBlob(blob, 'company-orders-' + (window.__lastCoDate || '') + '.png');
+    }
+    window.coShareImage = coShareImage;
 
     function coShareWhatsapp() {
       const groups = window.__lastCoGroups || [];
@@ -306,19 +330,69 @@
     }
     window.coShareWhatsapp = coShareWhatsapp;
 
+    function buildOrdersTableHtml(active) {
+      let html = '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px"><thead><tr>'
+        + '<th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">رقم الطلب</th>'
+        + '<th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">الوقت</th>'
+        + '<th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">النوع</th>'
+        + '<th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">الحالة</th>'
+        + '<th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">الأصناف</th></tr></thead><tbody>';
+      active.forEach(o => {
+        const itemsTxt = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
+        html += `<tr><td style="border:1px solid #ccc;padding:6px 8px">${esc(o.order_id.replace('ORD-',''))}</td><td style="border:1px solid #ccc;padding:6px 8px">${timeOnly(o.created_at)}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(o.order_type || '')}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(o.status)}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(itemsTxt)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
     function ordersPrintTable() {
       const orders = window.__lastOrders || [];
       const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
       if (!active.length) { alert('لا توجد طلبات حالية'); return; }
-      let html = '<table><thead><tr><th>رقم الطلب</th><th>الوقت</th><th>النوع</th><th>الحالة</th><th>الأصناف</th></tr></thead><tbody>';
-      active.forEach(o => {
-        const itemsTxt = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
-        html += `<tr><td>${esc(o.order_id.replace('ORD-',''))}</td><td>${timeOnly(o.created_at)}</td><td>${esc(o.order_type || '')}</td><td>${esc(o.status)}</td><td>${esc(itemsTxt)}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      printHtmlDoc('جدول الطلبات الحالية', html);
+      printHtmlDoc('جدول الطلبات الحالية', buildOrdersTableHtml(active));
     }
     window.ordersPrintTable = ordersPrintTable;
+
+    async function ordersShareImage() {
+      const orders = window.__lastOrders || [];
+      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
+      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
+      const blob = await tableToImageBlob('📋 جدول الطلبات الحالية', buildOrdersTableHtml(active));
+      await sendImageBlob(blob, 'orders-table-' + todayStr() + '.png');
+    }
+    window.ordersShareImage = ordersShareImage;
+
+    // ===== تحويل جدول HTML لصورة (لإرسالها كصورة على واتساب) =====
+    async function tableToImageBlob(title, bodyHtml) {
+      if (typeof html2canvas === 'undefined') { alert('تعذر تحميل مكتبة الصور، تأكد من الاتصال بالإنترنت'); return null; }
+      const box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:-9999px;top:0;width:420px;background:#fff;padding:16px;font-family:Tajawal,Tahoma,Arial,sans-serif;direction:rtl;color:#221a20;z-index:-1';
+      box.innerHTML = '<h2 style="font-size:15px;margin-bottom:10px">' + title + '</h2>' + bodyHtml;
+      document.body.appendChild(box);
+      try {
+        await new Promise(r => setTimeout(r, 60));
+        const canvas = await html2canvas(box, { scale: 2, backgroundColor: '#ffffff' });
+        return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      } catch (e) {
+        alert('حدث خطأ أثناء إنشاء الصورة');
+        return null;
+      } finally {
+        box.remove();
+      }
+    }
+
+    async function sendImageBlob(blob, filename) {
+      if (!blob) return;
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: filename }); return; } catch (e) { /* fall through */ }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      alert('تم تحميل صورة الجدول على جهازك. افتح واتساب وأرفقها يدويًا لإرسالها.');
+    }
 
     function ordersShareWhatsapp() {
       const orders = window.__lastOrders || [];
@@ -365,17 +439,32 @@
         document.getElementById('stReady').textContent = readys.length;
         document.getElementById('stDoneToday').textContent = doneToday.length;
 
-        document.getElementById('listNew').innerHTML = news.length
-          ? news.map(o => ticketHtml(o, 'بدء التحضير', 'قيد التحضير', 'btn-prep')).join('')
-          : '<div class="empty">لا توجد طلبات جديدة</div>';
-        document.getElementById('listPrep').innerHTML = preps.length
-          ? preps.map(o => ticketHtml(o, 'جاهز للتسليم', 'جاهز', 'btn-ready')).join('')
-          : '<div class="empty">لا يوجد طلبات قيد التحضير</div>';
-        document.getElementById('listReady').innerHTML = readys.length
-          ? readys.map(o => ticketHtml(o, 'تم التسليم', 'تم التسليم', 'btn-done')).join('')
-          : '<div class="empty">لا توجد طلبات جاهزة</div>';
+        renderList('listNew', news.length ? news.map(o => ticketHtml(o, 'بدء التحضير', 'قيد التحضير', 'btn-prep')).join('') : '<div class="empty">لا توجد طلبات جديدة</div>');
+        renderList('listPrep', preps.length ? preps.map(o => ticketHtml(o, 'جاهز للتسليم', 'جاهز', 'btn-ready')).join('') : '<div class="empty">لا يوجد طلبات قيد التحضير</div>');
+        renderList('listReady', readys.length ? readys.map(o => ticketHtml(o, 'تم التسليم', 'تم التسليم', 'btn-done')).join('') : '<div class="empty">لا توجد طلبات جاهزة</div>');
       } catch (e) {}
     }
+
+    // لا نُعيد رسم عمود عليه اختيارات محددة حاليًا (حتى لا نفقد تحديد المستخدم أثناء التحديث التلقائي)
+    function renderList(listId, html) {
+      const el = document.getElementById(listId);
+      if (el.querySelector('.ord-check:checked')) return;
+      el.innerHTML = html;
+    }
+
+    window.toggleSelectAll = function (listId, checked) {
+      document.querySelectorAll('#' + listId + ' .ord-check').forEach(cb => { cb.checked = checked; });
+    };
+
+    window.bulkUpdateStatus = async function (listId, newStatus) {
+      const boxes = document.querySelectorAll('#' + listId + ' .ord-check:checked');
+      if (!boxes.length) { alert('اختر طلبًا واحدًا على الأقل أولاً'); return; }
+      const ids = Array.from(boxes).map(cb => cb.dataset.oid);
+      for (const id of ids) {
+        try { await api('update_status', { orderId: id, status: newStatus }); } catch (e) {}
+      }
+      loadOrders();
+    };
 
     async function updateStatus(orderId, status) {
       try {
