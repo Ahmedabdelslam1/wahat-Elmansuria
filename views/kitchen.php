@@ -93,6 +93,8 @@
     .row-new td:first-child { border-right:4px solid var(--new); }
     .row-prep td:first-child { border-right:4px solid var(--prep); }
     .row-ready td:first-child { border-right:4px solid var(--ready); }
+    .row-done { opacity:.55; }
+    .row-done td:first-child { border-right:4px solid #3a3540; }
     .act-icons { display:flex; gap:4px; justify-content:flex-end; }
     .mini-icon-btn { width:26px; height:26px; border-radius:8px; border:1px solid var(--border); background:#e7f8ec; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; padding:0; }
     .mini-icon-btn.next-btn { border:none; color:#fff; }
@@ -145,7 +147,7 @@
         <button onclick="coChangeDay(1)">يوم تالي ▶</button>
         <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
         <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
-        <button class="toolbar-btn wa-btn" onclick="coSharePdf()">📤 إرسال PDF</button>
+        <button class="toolbar-btn wa-btn" onclick="coSendPdf('share')">📤 إرسال PDF</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
@@ -153,7 +155,7 @@
 
   <div class="toolbar-row">
     <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersSharePdf()">📤 إرسال جدول الطلبات PDF</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersSendPdf('share')">📤 إرسال جدول الطلبات PDF</button>
   </div>
 
   <div class="orders-wrap">
@@ -206,7 +208,7 @@
       const isDelivery = o.order_type === 'دليفري';
       const isCompany = o.order_type === 'شركات';
       const itemsTxt = (o.items || []).map(i => esc(i.name) + ' <b style="color:var(--primary)">×' + esc(i.qty) + '</b>').join('، ');
-      const rowCls = o.status === 'جديد' ? 'row-new' : (o.status === 'قيد التحضير' ? 'row-prep' : 'row-ready');
+      const rowCls = o.status === 'جديد' ? 'row-new' : (o.status === 'قيد التحضير' ? 'row-prep' : (o.status === 'جاهز' ? 'row-ready' : 'row-done'));
       const nx = nextStatusOf(o.status);
       return `<tr class="${rowCls}">
         <td class="oid">${esc(o.order_id.replace('ORD-',''))}</td>
@@ -216,13 +218,13 @@
         <td class="items-cell">${itemsTxt}</td>
         <td class="notes-cell">${o.notes ? '📝 ' + esc(o.notes) : '—'}</td>
         <td><div class="act-icons">
-          ${nx ? `<button class="mini-icon-btn next-btn ${nx[3]}" title="${esc(nx[2])}" onclick="updateStatus('${esc(o.order_id)}', '${nx[0]}')">${nx[1]}</button>` : ''}
+          ${nx ? `<button class="mini-icon-btn next-btn ${nx[3]}" title="${esc(nx[2])}" onclick="updateStatus('${esc(o.order_id)}', '${nx[0]}')">${nx[1]}</button>` : `<button class="mini-icon-btn" title="إعادة فتح الطلب" onclick="updateStatus('${esc(o.order_id)}', 'قيد التحضير')">↩️</button>`}
           <button class="mini-icon-btn" title="إرسال الطلب PDF على واتساب" onclick="orderSharePdf('${esc(o.order_id)}')">📤</button>
         </div></td>
       </tr>`;
     }
 
-    function printHtmlDoc(title, bodyHtml) {
+    function printHtmlDoc(title, bodyHtml, extraBtns) {
       const w = window.open('', '_blank');
       if (!w) { alert('يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
       w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${title}</title>
@@ -234,11 +236,17 @@
           th,td{border:1px solid #ccc;padding:6px 8px;text-align:right}
           th{background:#f4f4f4}
           .sum{font-weight:800;margin-top:4px}
-          .pbtn{margin-top:14px;padding:10px 18px;border:none;border-radius:8px;background:#ff3b30;color:#fff;font-weight:800;cursor:pointer;font-size:13px}
-          @media print { .pbtn{display:none} }
+          .pbtn{margin-top:14px;padding:10px 16px;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px}
+          .pbtn.pr{background:#ff3b30;color:#fff}
+          .pbtn.pdf{background:#1f9e46;color:#fff}
+          .btns{display:flex;gap:8px;flex-wrap:wrap}
+          @media print { .btns{display:none} }
         </style></head><body>
         <h2>${title}</h2>${bodyHtml}
-        <button class="pbtn" onclick="window.print()">🖨️ طباعة</button>
+        <div class="btns">
+          <button class="pbtn pr" onclick="window.print()">🖨️ طباعة</button>
+          ${extraBtns || ''}
+        </div>
         </body></html>`);
       w.document.close();
     }
@@ -259,18 +267,20 @@
     function coPrintTable() {
       const groups = window.__lastCoGroups || [];
       if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
-      printHtmlDoc('طلبات الشركات - ' + (window.__lastCoDate || ''), buildCoTableHtml(groups));
+      const btns = '<button class="pbtn pdf" onclick="window.opener.coSendPdf(\'share\')">📤 إرسال PDF واتساب</button>'
+        + '<button class="pbtn pdf" onclick="window.opener.coSendPdf(\'download\')">⬇️ تنزيل PDF</button>';
+      printHtmlDoc('طلبات الشركات - ' + (window.__lastCoDate || ''), buildCoTableHtml(groups), btns);
     }
     window.coPrintTable = coPrintTable;
 
-    async function coSharePdf() {
+    async function coSendPdf(mode) {
       const groups = window.__lastCoGroups || [];
       if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
       const title = '🏢 طلبات الشركات - ' + (window.__lastCoDate || '');
       const blob = await tableToPdfBlob(title, buildCoTableHtml(groups));
-      await sendPdfBlob(blob, 'company-orders-' + (window.__lastCoDate || '') + '.pdf');
+      await sendPdfBlob(blob, 'company-orders-' + (window.__lastCoDate || '') + '.pdf', mode === 'download');
     }
-    window.coSharePdf = coSharePdf;
+    window.coSendPdf = coSendPdf;
 
     function buildOrdersTableHtml(active) {
       let html = '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px"><thead><tr>'
@@ -287,22 +297,27 @@
       return html;
     }
 
+    function todayShownOrders() {
+      const today = todayStr();
+      return (window.__lastOrders || []).filter(o => (o.created_at || '').slice(0, 10) === today);
+    }
+
     function ordersPrintTable() {
-      const orders = window.__lastOrders || [];
-      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
-      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
-      printHtmlDoc('جدول الطلبات الحالية', buildOrdersTableHtml(active));
+      const shown = todayShownOrders();
+      if (!shown.length) { alert('لا توجد طلبات اليوم'); return; }
+      const btns = '<button class="pbtn pdf" onclick="window.opener.ordersSendPdf(\'share\')">📤 إرسال PDF واتساب</button>'
+        + '<button class="pbtn pdf" onclick="window.opener.ordersSendPdf(\'download\')">⬇️ تنزيل PDF</button>';
+      printHtmlDoc('📋 جدول طلبات اليوم ' + todayStr(), buildOrdersTableHtml(shown), btns);
     }
     window.ordersPrintTable = ordersPrintTable;
 
-    async function ordersSharePdf() {
-      const orders = window.__lastOrders || [];
-      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
-      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
-      const blob = await tableToPdfBlob('📋 جدول الطلبات الحالية', buildOrdersTableHtml(active));
-      await sendPdfBlob(blob, 'orders-table-' + todayStr() + '.pdf');
+    async function ordersSendPdf(mode) {
+      const shown = todayShownOrders();
+      if (!shown.length) { alert('لا توجد طلبات اليوم'); return; }
+      const blob = await tableToPdfBlob('📋 جدول طلبات اليوم ' + todayStr(), buildOrdersTableHtml(shown));
+      await sendPdfBlob(blob, 'orders-table-' + todayStr() + '.pdf', mode === 'download');
     }
-    window.ordersSharePdf = ordersSharePdf;
+    window.ordersSendPdf = ordersSendPdf;
 
     // ===== تحويل جدول HTML إلى ملف PDF (لإرساله على واتساب) =====
     async function htmlToCanvas(title, bodyHtml) {
@@ -341,17 +356,19 @@
       }
     }
 
-    async function sendPdfBlob(blob, filename) {
+    async function sendPdfBlob(blob, filename, forceDownload) {
       if (!blob) return;
-      const file = new File([blob], filename, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: filename }); return; } catch (e) { /* fall through */ }
+      if (!forceDownload) {
+        const file = new File([blob], filename, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: filename }); return; } catch (e) { /* fall through */ }
+        }
       }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      alert('تم تحميل ملف PDF على جهازك. افتح واتساب وأرفقه يدويًا لإرساله.');
+      alert('تم تنزيل ملف PDF على جهازك. افتح واتساب وأرفقه لإرساله.');
     }
 
     async function orderSharePdf(orderId) {
@@ -406,10 +423,10 @@
         document.getElementById('stReady').textContent = readys.length;
         document.getElementById('stDoneToday').textContent = doneToday.length;
 
-        const active = news.concat(preps).concat(readys);
-        document.getElementById('ordersBody').innerHTML = active.length
-          ? active.map(o => orderRowHtml(o)).join('')
-          : '<tr><td colspan="7" class="empty">لا توجد طلبات حالية</td></tr>';
+        const shown = orders.filter(o => (o.created_at || '').slice(0, 10) === today);
+        document.getElementById('ordersBody').innerHTML = shown.length
+          ? shown.map(o => orderRowHtml(o)).join('')
+          : '<tr><td colspan="7" class="empty">لا توجد طلبات اليوم</td></tr>';
       } catch (e) {}
     }
 
