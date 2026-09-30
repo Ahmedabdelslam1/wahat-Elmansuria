@@ -157,7 +157,7 @@ function init_db(PDO $db) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
         }
         if (!column_exists($db, 'company_orders', 'status')) {
-            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'نشط'");
+            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'جديد'");
         }
         $db->exec("
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -259,7 +259,7 @@ function init_db(PDO $db) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN order_id VARCHAR(50) DEFAULT ''");
         }
         if (!column_exists($db, 'company_orders', 'status')) {
-            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'نشط'");
+            $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'جديد'");
         }
         $db->exec("
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -495,7 +495,22 @@ function user_allowed_pages($user) {
 // ===================== SESSION / AUTH =====================
 function boot_session() {
     if (session_status() === PHP_SESSION_ACTIVE) return;
+
+    // تخزين الجلسات في مجلد data/ الخاص بنا (نفس مكان قاعدة البيانات، مضمون قابل للكتابة)
+    // بعض الاستضافات المجانية (مثل InfinityFree) تمسح أو تقيّد مجلد الجلسات الافتراضي للسيرفر،
+    // فيفقد المستخدم جلسته فجأة أثناء العمل (يظهر "انتهت الجلسة" عند أي إجراء مثل الحذف/الإلغاء).
+    // تخزينها هنا بشكل صريح يحل هذه المشكلة نهائيًا.
+    $sessDir = __DIR__ . '/data/sessions';
+    if (!is_dir($sessDir)) @mkdir($sessDir, 0775, true);
+    if (is_dir($sessDir) && is_writable($sessDir)) {
+        session_save_path($sessDir);
+    }
+
+    // عمر جلسة طويل (12 ساعة) — يوم عمل كامل على شاشة الكاشير/المطبخ بدون قطع
+    $lifetime = 12 * 3600;
+    ini_set('session.gc_maxlifetime', (string)$lifetime);
     session_set_cookie_params([
+        'lifetime' => $lifetime,
         'httponly' => true,
         'samesite' => 'Lax',
         // 'secure' => true, // فعّلها عند استخدام HTTPS
@@ -807,6 +822,21 @@ function api_audit_report($data) {
     json_out(['success' => true, 'from' => $from, 'to' => $to, 'entries' => $rows, 'count' => count($rows)]);
 }
 
+/** تصفير الحسابات بالكامل: حذف كل الطلبات وطلبات الشركات نهائيًا (بداية جديدة) — للمدير فقط */
+function api_reset_accounts($data) {
+    $user = require_role(['admin']);
+    $db = db();
+    if ((string)($data['confirm'] ?? '') !== 'تصفير') {
+        json_out(['success' => false, 'message' => 'تأكيد غير صحيح']);
+    }
+    $ordersCount = (int)$db->query('SELECT COUNT(*) AS c FROM orders')->fetch()['c'];
+    $coCount = (int)$db->query('SELECT COUNT(*) AS c FROM company_orders')->fetch()['c'];
+    $db->exec('DELETE FROM orders');
+    $db->exec('DELETE FROM company_orders');
+    log_activity('تصفير الحسابات', 'النظام', 'الكل', 'حذف ' . $ordersCount . ' طلب و ' . $coCount . ' بند شركة نهائيًا بواسطة ' . $user['username']);
+    json_out(['success' => true, 'message' => 'تم تصفير الحسابات بالكامل', 'deletedOrders' => $ordersCount, 'deletedCompanyItems' => $coCount]);
+}
+
 function api_get_orders($data) {
     require_role(['admin', 'cashier', 'kitchen']);
     $db = db();
@@ -888,27 +918,6 @@ function api_toggle_item($data) {
     $stmt->execute([!empty($data['active']) ? 1 : 0, (int)($data['id'] ?? 0)]);
     log_activity(!empty($data['active']) ? 'تفعيل صنف' : 'إخفاء صنف', 'منيو', (string)($data['id'] ?? ''), '');
     json_out(['success' => true, 'message' => !empty($data['active']) ? 'تم تفعيل الصنف' : 'تم إخفاء الصنف']);
-}
-
-function api_delete_item($data) {
-    require_role(['admin']);
-    $db = db();
-    $id = (int)($data['id'] ?? 0);
-    if ($id <= 0) json_out(['success' => false, 'message' => 'الصنف غير صحيح']);
-
-    $st = $db->prepare('SELECT id, name, category, price FROM menu WHERE id = ?');
-    $st->execute([$id]);
-    $item = $st->fetch();
-    if (!$item) json_out(['success' => false, 'message' => 'الصنف غير موجود']);
-
-    $del = $db->prepare('DELETE FROM menu WHERE id = ?');
-    $del->execute([$id]);
-    if ((int)$del->rowCount() !== 1) {
-        json_out(['success' => false, 'message' => 'تعذر حذف الصنف']);
-    }
-
-    log_activity('حذف صنف', 'منيو', (string)$id, $item['name'] . ' — ' . $item['category'] . ' — ' . $item['price'] . ' ج.م');
-    json_out(['success' => true, 'message' => 'تم حذف الصنف']);
 }
 
 function api_add_user($data) {
@@ -1250,21 +1259,36 @@ function api_add_company_order($data) {
     if ($price <= 0) json_out(['success' => false, 'message' => 'أدخل قيمة الوجبة']);
 
     $total = $meals * $price;
-    $stmt = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->execute([$company, $department, $package, $package === 'من المنيو' ? $itemName : $package, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username']]);
+    $label = $package === 'من المنيو' ? $itemName : $package;
+
+    // إنشاء طلب فعلي مرتبط في جدول orders ليظهر كـ"طلب جديد" في شاشتي الكاشير والمطبخ،
+    // تمامًا مثل باقي الطلبات (صالة/دليفري)، مع بقاء تفاصيله في جدول الشركات للتقارير.
+    $orderId = 'ORD-' . date('Ymd-His') . '-' . substr((string)mt_rand(1000, 9999), 0, 4);
+    $itemsJson = json_encode([['id' => 0, 'name' => $label, 'price' => $price, 'qty' => $meals]], JSON_UNESCAPED_UNICODE);
+    $ordStmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, address, delivery_fee, created_by, company_name, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $ordStmt->execute([
+        $orderId, date('Y-m-d H:i:s'), $company, '', $itemsJson, $total, 'جديد', 'شركات',
+        $notes, '', 0, $user['username'], $company, $department,
+    ]);
+
+    $stmt = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by, order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$company, $department, $package, $label, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username'], $orderId]);
     log_activity('إضافة طلب شركة', 'طلب شركة', $company, $package . ($package === 'من المنيو' ? ' (' . $itemName . ')' : '') . ' × ' . $meals . ' = ' . $total . ' ج.م');
-    json_out(['success' => true, 'message' => 'تم تسجيل طلب الشركة بنجاح', 'total' => $total]);
+    json_out(['success' => true, 'message' => 'تم تسجيل طلب الشركة بنجاح', 'total' => $total, 'orderId' => $orderId]);
 }
 
 /** طلبات شركات اليوم: مجمعة باسم الشركة مع الإجماليات والتفاصيل */
-function api_company_today() {
-    // الكاشير أو المطبخ: المطبخ يرى وجبات الشركات وعددها
+function api_company_today($data = []) {
+    // الكاشير أو المطبخ: المطبخ يرى وجبات الشركات وعددها (مع إمكانية استرجاع تاريخ سابق)
     $u = current_user();
     if (!$u || !array_intersect(['cashier', 'kitchen'], user_allowed_pages($u))) {
         json_out(['success' => false, 'message' => 'غير مصرح']);
     }
+    $date = (string)($data['date'] ?? '');
+    $ts = $date !== '' ? strtotime($date) : false;
+    $date = $ts !== false ? date('Y-m-d', $ts) : date('Y-m-d');
     $db = db();
-    $res = $db->query('SELECT * FROM company_orders WHERE order_date = ' . $db->quote(date('Y-m-d')) . ' ORDER BY created_at DESC');
+    $res = $db->query('SELECT * FROM company_orders WHERE order_date = ' . $db->quote($date) . ' ORDER BY created_at DESC');
     $orders = [];
     while ($row = $res->fetch()) {
         $row['meals'] = (int)$row['meals'];
@@ -1284,7 +1308,7 @@ function api_company_today() {
     }
     $g = array_values($groups);
     usort($g, function($a, $b) { return $b['total'] <=> $a['total']; });
-    json_out(['success' => true, 'groups' => $g, 'grandTotal' => array_sum(array_column($g, 'total')), 'grandMeals' => array_sum(array_column($g, 'totalMeals'))]);
+    json_out(['success' => true, 'date' => $date, 'groups' => $g, 'grandTotal' => array_sum(array_column($g, 'total')), 'grandMeals' => array_sum(array_column($g, 'totalMeals'))]);
 }
 
 /** تعديل بند طلب شركة */
@@ -1311,8 +1335,36 @@ function api_update_company_order($data) {
     if ($price <= 0) json_out(['success' => false, 'message' => 'أدخل قيمة الوجبة']);
 
     $total = $meals * $price;
+    $newLabel = $package === 'من المنيو' ? $itemName : $package;
+    $oldLabel = $o['item_name'] !== '' ? $o['item_name'] : $o['package'];
+
+    // مزامنة التعديل مع الطلب الأصلي المرتبط (orders.items_json) ليظهر التغيير في شاشة المطبخ فورًا
+    $orderId = (string)($o['order_id'] ?? '');
+    if ($orderId !== '') {
+        $ordSt = $db->prepare('SELECT items_json FROM orders WHERE order_id = ?');
+        $ordSt->execute([$orderId]);
+        $ord = $ordSt->fetch();
+        if ($ord) {
+            $items = json_decode((string)$ord['items_json'], true);
+            if (!is_array($items)) $items = [];
+            $matched = false;
+            foreach ($items as $k => $it) {
+                if (!$matched && (string)($it['name'] ?? '') === (string)$oldLabel && (float)($it['price'] ?? 0) === (float)$o['price']) {
+                    $items[$k] = ['id' => 0, 'name' => $newLabel, 'price' => $price, 'qty' => $meals];
+                    $matched = true;
+                }
+            }
+            if ($matched) {
+                $newTotal = 0.0;
+                foreach ($items as $it) { $newTotal += (float)($it['price'] ?? 0) * (int)($it['qty'] ?? 1); }
+                $updOrd = $db->prepare('UPDATE orders SET items_json = ?, total = ?, customer_name = ?, department = ? WHERE order_id = ?');
+                $updOrd->execute([json_encode($items, JSON_UNESCAPED_UNICODE), $newTotal, $company, $department, $orderId]);
+            }
+        }
+    }
+
     $st = $db->prepare('UPDATE company_orders SET company_name = ?, department = ?, package = ?, item_name = ?, meals = ?, price = ?, total = ?, notes = ? WHERE id = ?');
-    $st->execute([$company, $department, $package, $package === 'من المنيو' ? $itemName : $package, $meals, $price, $total, $notes, $id]);
+    $st->execute([$company, $department, $package, $newLabel, $meals, $price, $total, $notes, $id]);
     log_activity('تعديل طلب شركة', 'طلب شركة', $company, 'بند #' . $id . ': ' . $package . ($package === 'من المنيو' ? ' (' . $itemName . ')' : '') . ' × ' . $meals . ' = ' . $total . ' ج.م');
     json_out(['success' => true, 'message' => 'تم تعديل بند الشركة', 'total' => $total]);
 }
@@ -1339,16 +1391,72 @@ function api_delete_company_order($data) {
     $user = require_page_access('cashier');
     $db = db();
     $id = (int)($data['id'] ?? 0);
-    $q = $db->prepare('SELECT company_name, package, item_name, meals, total FROM company_orders WHERE id = ?');
+    $q = $db->prepare('SELECT company_name, package, item_name, price, meals, total, order_id FROM company_orders WHERE id = ?');
     $q->execute([$id]);
     $o = $q->fetch();
+    if (!$o) json_out(['success' => false, 'message' => 'البند غير موجود']);
+
     $st = $db->prepare('DELETE FROM company_orders WHERE id = ?');
     $st->execute([$id]);
-    if ((int)$st->rowCount()) {
-        log_activity('حذف طلب شركة', 'طلب شركة', $o ? $o['company_name'] : (string)$id, 'بند #' . $id . ' حُذف نهائيًا');
-        json_out(['success' => true, 'message' => 'تم حذف البند']);
+    if (!(int)$st->rowCount()) json_out(['success' => false, 'message' => 'البند غير موجود']);
+
+    // مزامنة الحذف مع الطلب الأصلي (orders.items_json) حتى لا يعود البند بعد أي تعديل لاحق على الطلب
+    $orderId = (string)($o['order_id'] ?? '');
+    if ($orderId !== '') {
+        $ordSt = $db->prepare('SELECT items_json, order_type FROM orders WHERE order_id = ?');
+        $ordSt->execute([$orderId]);
+        $ord = $ordSt->fetch();
+        if ($ord) {
+            $items = json_decode((string)$ord['items_json'], true);
+            if (!is_array($items)) $items = [];
+            $removed = false;
+            foreach ($items as $k => $it) {
+                if (!$removed && (string)($it['name'] ?? '') === (string)$o['item_name'] && (float)($it['price'] ?? 0) === (float)$o['price']) {
+                    unset($items[$k]);
+                    $removed = true;
+                }
+            }
+            $items = array_values($items);
+            if (empty($items)) {
+                // آخر بند في الطلب: يُحذف الطلب نهائيًا بالكامل
+                $delOrd = $db->prepare('DELETE FROM orders WHERE order_id = ?');
+                $delOrd->execute([$orderId]);
+                $delCo = $db->prepare('DELETE FROM company_orders WHERE order_id = ?');
+                $delCo->execute([$orderId]);
+            } else {
+                $newTotal = 0.0;
+                foreach ($items as $it) { $newTotal += (float)($it['price'] ?? 0) * (int)($it['qty'] ?? 1); }
+                $updOrd = $db->prepare('UPDATE orders SET items_json = ?, total = ? WHERE order_id = ?');
+                $updOrd->execute([json_encode($items, JSON_UNESCAPED_UNICODE), $newTotal, $orderId]);
+            }
+        }
     }
-    json_out(['success' => false, 'message' => 'البند غير موجود']);
+
+    log_activity('حذف طلب شركة', 'طلب شركة', $o['company_name'] ?: (string)$id, 'بند #' . $id . ' حُذف نهائيًا بشكل دائم (متزامن مع الطلب الأصلي)');
+    json_out(['success' => true, 'message' => 'تم حذف البند نهائيًا']);
+}
+
+/** تحديث حالة بند طلب شركة (تم / جديد) — يستخدمها الكاشير والمطبخ لتتبع التحضير، لا يمس حالة الإلغاء */
+function api_set_company_item_status($data) {
+    $u = current_user();
+    if (!$u || !array_intersect(['cashier', 'kitchen', 'admin'], user_allowed_pages($u))) {
+        json_out(['success' => false, 'message' => 'غير مصرح']);
+    }
+    $db = db();
+    $id = (int)($data['id'] ?? 0);
+    $status = (string)($data['status'] ?? '');
+    if (!in_array($status, ['تم', 'جديد'], true)) json_out(['success' => false, 'message' => 'حالة غير صحيحة']);
+
+    $q = $db->prepare('SELECT company_name, status FROM company_orders WHERE id = ?');
+    $q->execute([$id]);
+    $o = $q->fetch();
+    if (!$o) json_out(['success' => false, 'message' => 'البند غير موجود']);
+    if (($o['status'] ?? '') === 'ملغي') json_out(['success' => false, 'message' => 'البند ملغي']);
+
+    $dbStatus = $status === 'تم' ? 'تم' : null;
+    $st = $db->prepare('UPDATE company_orders SET status = ? WHERE id = ?');
+    $st->execute([$dbStatus, $id]);
+    json_out(['success' => true, 'message' => 'تم التحديث', 'status' => $status]);
 }
 
 /** تقرير الشركات خلال فترة: مجمعة باسم الشركة + تفاصيل كل طلب */

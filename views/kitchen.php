@@ -11,40 +11,58 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root{
-      --bg:#0e0e14; --surface:#1a1a24; --text:#f4f4f8; --muted:#9a9aad;
-      --primary:#ff3b30; --accent2:#ff9500; --new:#ff3b30; --prep:#ff9500; --ready:#34c759;
-      --border:#2b2b38;
+      --bg:#ffffff; --surface:#f7f7fa; --text:#221a20; --muted:#7a707a;
+      --primary:#ff3b30; --accent2:#ff9500; --new:#ff3b30; --prep:#e08600; --ready:#1f9e46;
+      --border:#e7e3e8;
     }
     body { font-family:'Tajawal','Segoe UI',Tahoma,sans-serif; background:var(--bg); color:var(--text); padding-bottom:20px; }
     .header {
-      background: linear-gradient(135deg, #15151f, #23233a);
+      background: linear-gradient(135deg, #ff3b30, #ff9500);
       padding: 12px 16px;
       display: flex; justify-content: space-between; align-items: center;
       position: sticky; top: 0; z-index: 50;
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap; gap:8px;
+      box-shadow: 0 2px 10px rgba(255,59,48,0.25);
     }
-    .header h1 { font-size: 17px; font-weight: 800; }
-    .header .user { font-size: 11px; color: var(--accent2); }
+    .header h1 { font-size: 17px; font-weight: 800; color:#fff; }
+    .header-logo { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background:#fff; flex-shrink:0; }
+    .header-brand { display:flex; align-items:center; gap:8px; }
+    .header .user { font-size: 11px; color: #fff; opacity:.9; }
     .logout, .sound-btn {
-      background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff;
+      background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.4); color: #fff;
       padding: 7px 13px; border-radius: 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; font-weight:700;
     }
-    .sound-btn.on { background:#34c759; border-color:#34c759; color:#05220f; }
-    .clock { font-size: 12.5px; color: var(--muted); font-weight: 700; direction: ltr; }
+    .sound-btn.on { background:#1f9e46; border-color:#1f9e46; color:#fff; }
+    .clock { font-size: 12.5px; color: #fff; opacity:.9; font-weight: 700; direction: ltr; }
 
     .stats-bar { display:flex; gap:10px; padding:10px 14px; overflow-x:auto; }
     .stat-chip { flex-shrink:0; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 16px; text-align:center; min-width:100px; }
     .stat-chip b { display:block; font-size:16px; font-weight:800; }
     .co-section { margin:14px 16px 4px; }
-    .co-section h3 { font-size:14px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+    .co-section-head { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; gap:8px; }
+    .co-section-head h3 { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .co-badge { background:#fff3e0; color:#c77700; border-radius:20px; padding:3px 11px; font-size:11.5px; font-weight:800; }
+    .co-toggle { width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:#fff3e0; color:#c77700; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; transition:transform .2s, box-shadow .2s; box-shadow:0 0 8px -1px rgba(255,149,0,0.4); }
+    .co-section.expanded .co-toggle { transform:rotate(180deg); box-shadow:0 0 12px 0 rgba(255,149,0,0.7); }
+    .co-body { display:none; margin-top:10px; }
+    .co-section.expanded .co-body { display:block; }
     .co-companies { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
-    .co-company-card { flex:0 0 auto; min-width:220px; max-width:320px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; }
-    .co-company-card .co-cname { font-weight:800; font-size:13px; margin-bottom:8px; color:#34c759; }
-    .co-company-card .co-line { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; border-bottom:1px dashed var(--border); }
-    .co-company-card .co-line:last-of-type { border-bottom:none; }
-    .co-company-card .co-meals { font-weight:800; white-space:nowrap; }
+    .co-company-card { flex:0 0 auto; min-width:250px; max-width:340px; background:#fff; border:1px solid var(--border); border-radius:14px; padding:12px; box-shadow:0 2px 8px rgba(20,20,30,0.05); }
+    .co-company-card .co-cname { font-weight:800; font-size:13px; margin-bottom:8px; color:#1f9e46; }
+    .co-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+    .co-table th { text-align:right; font-size:10px; font-weight:800; color:var(--muted); padding:4px 4px; border-bottom:2px solid var(--border); }
+    .co-table td { padding:6px 4px; border-bottom:1px dashed var(--border); vertical-align:top; }
+    .co-table tr:last-of-type td { border-bottom:none; }
+    .co-table .co-dept-cell { color:#7a707a; font-weight:700; white-space:nowrap; }
+    .co-table .co-meal-cell { font-weight:700; }
+    .co-table .co-count-cell { font-weight:800; color:#1f9e46; text-align:center; white-space:nowrap; }
+    .co-line-notes { font-size:10.5px; color:#c77700; font-weight:700; margin-top:2px; }
     .co-company-card .co-sum { margin-top:8px; padding-top:8px; border-top:2px solid var(--border); font-size:12px; font-weight:800; display:flex; justify-content:space-between; }
+    .co-date-nav { display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .co-date-nav button { border:1px solid var(--border); background:#fff; color:var(--text); font-family:inherit; font-weight:700; font-size:11px; padding:6px 9px; border-radius:8px; cursor:pointer; }
+    .co-date-nav input[type=date] { border:1px solid var(--border); background:#fff; color:var(--text); font-family:inherit; font-size:11.5px; padding:5px 7px; border-radius:8px; }
+    .co-date-nav #coTodayBtn { background:#fff3e0; color:#c77700; border-color:#fff3e0; }
     .stat-chip span { font-size:10px; color:var(--muted); font-weight:700; }
 
     .board {
@@ -61,7 +79,7 @@
       font-weight: 800; font-size: 14px;
     }
     .col-head .count {
-      background: rgba(255,255,255,0.08); padding: 2px 10px; border-radius: 20px; font-size: 12px;
+      background: rgba(20,20,30,0.06); padding: 2px 10px; border-radius: 20px; font-size: 12px;
     }
     .col.new .col-head { color: var(--new); }
     .col.prep .col-head { color: var(--prep); }
@@ -73,6 +91,7 @@
       border-radius: 16px;
       padding: 14px;
       margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(20,20,30,0.05);
     }
     .col.new .ticket { border-right: 5px solid var(--new); }
     .col.prep .ticket { border-right: 5px solid var(--prep); }
@@ -82,9 +101,9 @@
     .ticket .oid { font-weight: 800; font-size: 15px; }
     .ticket .time { font-size: 11px; color: var(--muted); }
     .type-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
-    .type-tag.dinein { background:#0d2a4a; color:#5ab0ff; }
-    .type-tag.delivery { background:#3a2600; color:#ffb020; }
-    .type-tag.company { background:#e7f8ec; color:#34c759; }
+    .type-tag.dinein { background:#e8f2ff; color:#1c6fd9; }
+    .type-tag.delivery { background:#fff3e0; color:#c77700; }
+    .type-tag.company { background:#e7f8ec; color:#1f9e46; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -95,28 +114,30 @@
       background: var(--primary); color:#fff; font-size:13px; font-weight:800;
       min-width: 30px; text-align:center; border-radius: 8px; padding: 2px 6px;
     }
-    .ticket .notes { font-size: 12px; color: var(--accent2); margin-bottom: 10px; }
+    .ticket .notes { font-size: 12px; color: #c77700; font-weight:700; margin-bottom: 10px; background:#fff3e0; padding:6px 10px; border-radius:8px; }
     .ticket button {
       width: 100%; padding: 13px; border: none; border-radius: 12px;
       font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
     }
-    .btn-prep { background: var(--prep); color: #1a1200; }
-    .btn-ready { background: var(--ready); color: #05220f; }
-    .btn-done { background: #2b2b38; color: #fff; }
+    .btn-prep { background: var(--prep); color: #fff; }
+    .btn-ready { background: var(--ready); color: #fff; }
+    .btn-done { background: #3a3540; color: #fff; }
     .empty { text-align:center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
+    .co-toggle, .stat-chip, .ticket { color: var(--text); }
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>👨‍🍳 شاشة المطبخ</h1>
-      <div class="user"><?= e($user['name']) ?></div>
+    <div class="header-brand">
+      <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
+      <div>
+        <h1>👨‍🍳 شاشة المطبخ</h1>
+        <div class="user"><?= e($user['name']) ?></div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div class="clock" id="clock">--:--:--</div>
-      <button class="sound-btn" id="soundBtn">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -129,8 +150,24 @@
   </div>
 
   <div class="co-section" id="coSection" style="border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface)">
-    <h3>🏢 طلبات الشركات اليوم <span class="count" id="coCount">0</span></h3>
-    <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
+    <div class="co-section-head" onclick="toggleCoSection()">
+      <h3 id="coTitle">🏢 طلبات الشركات اليوم
+        <span class="co-badge" id="coCount">0 شركة</span>
+        <span class="co-badge" id="coMealsBadge">0 وجبة</span>
+      </h3>
+      <div class="co-toggle" id="coToggleIcon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+    </div>
+    <div class="co-body" id="coBody">
+      <div class="co-date-nav" onclick="event.stopPropagation()">
+        <button onclick="coChangeDay(-1)">◀ يوم سابق</button>
+        <input type="date" id="coDateInput" onchange="coDateChanged()">
+        <button onclick="coChangeDay(1)">يوم تالي ▶</button>
+        <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
+      </div>
+      <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
+    </div>
   </div>
 
   <div class="board">
@@ -249,52 +286,104 @@
 
     let knownCoIds = new Set();
     let coFirstLoad = true;
+    let coExpanded = false;
+    function coTodayStr() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()); }
+    let coSelectedDate = coTodayStr();
+
+    function toggleCoSection() {
+      coExpanded = !coExpanded;
+      document.getElementById('coSection').classList.toggle('expanded', coExpanded);
+    }
+    window.toggleCoSection = toggleCoSection;
+
+    function coUpdateTitle() {
+      const isToday = coSelectedDate === coTodayStr();
+      document.getElementById('coTitle').childNodes[0].textContent = isToday ? '🏢 طلبات الشركات اليوم ' : ('🏢 طلبات الشركات — ' + coSelectedDate + ' ');
+      document.getElementById('coTodayBtn').style.display = isToday ? 'none' : 'inline-block';
+    }
+
+    function coChangeDay(delta) {
+      const d = new Date(coSelectedDate + 'T12:00:00');
+      d.setDate(d.getDate() + delta);
+      coSelectedDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
+      document.getElementById('coDateInput').value = coSelectedDate;
+      coUpdateTitle();
+      loadCompanyOrders();
+    }
+    window.coChangeDay = coChangeDay;
+
+    function coDateChanged() {
+      const v = document.getElementById('coDateInput').value;
+      if (v) coSelectedDate = v;
+      coUpdateTitle();
+      loadCompanyOrders();
+    }
+    window.coDateChanged = coDateChanged;
+
+    function coGoToday() {
+      coSelectedDate = coTodayStr();
+      document.getElementById('coDateInput').value = coSelectedDate;
+      coUpdateTitle();
+      loadCompanyOrders();
+    }
+    window.coGoToday = coGoToday;
 
     async function loadCompanyOrders() {
       try {
-        const res = await api('company_today');
+        const res = await api('company_today', { date: coSelectedDate });
         const box = document.getElementById('coCompanies');
         if (!res.success) return;
         const active = res.groups
           .map(g => ({ ...g, orders: g.orders.filter(o => o.status !== 'ملغي') }))
           .filter(g => g.orders.length);
-        // إنذار عند وصول طلب شركات جديد
-        const ids = new Set();
-        (res.groups || []).forEach(g => g.orders.forEach(o => ids.add(o.id)));
-        if (!coFirstLoad && knownCoIds.size > 0) {
-          let hasNewCo = false;
-          ids.forEach(id => { if (!knownCoIds.has(id)) hasNewCo = true; });
-          if (hasNewCo && window.__sirenAlert) __sirenAlert('🚨 طلب شركات جديد!');
+        // إنذار عند وصول طلب شركات جديد (فقط عند عرض اليوم الحالي)
+        if (coSelectedDate === coTodayStr()) {
+          const ids = new Set();
+          (res.groups || []).forEach(g => g.orders.forEach(o => ids.add(o.id)));
+          if (!coFirstLoad && knownCoIds.size > 0) {
+            let hasNewCo = false;
+            ids.forEach(id => { if (!knownCoIds.has(id)) hasNewCo = true; });
+            if (hasNewCo && window.__sirenAlert) __sirenAlert('🚨 طلب شركات جديد!');
+          }
+          knownCoIds = ids;
         }
-        knownCoIds = ids;
         coFirstLoad = false;
-        document.getElementById('coCount').textContent = active.length;
+        const totalMealsAll = active.reduce((s, g) => s + g.totalMeals, 0);
+        document.getElementById('coCount').textContent = active.length + ' شركة';
+        document.getElementById('coMealsBadge').textContent = totalMealsAll + ' وجبة';
         if (!active.length) {
-          box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div>';
+          box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات في هذا اليوم</div>';
           return;
         }
         box.innerHTML = active.map(g => `
           <div class="co-company-card">
             <div class="co-cname">🏢 ${esc(g.company)}</div>
-            ${g.orders.map(o => {
-              const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
-              return `<div class="co-line" style="flex-direction:column;align-items:stretch;gap:2px">
-                <div style="display:flex;justify-content:space-between"><span>${esc(label)}</span><span class="co-meals">× ${o.meals} وجبة</span></div>
-                ${o.notes ? `<div style="font-size:11.5px;color:#ef6c00;font-weight:700">📝 ${esc(o.notes)}</div>` : ''}
-              </div>`;
-            }).join('')}
-            <div class="co-sum"><span>الإجمالي</span><span>${g.totalMeals} وجبة</span></div>
+            <table class="co-table">
+              <thead><tr><th>القسم</th><th>الوجبة</th><th>العدد</th></tr></thead>
+              <tbody>
+                ${g.orders.map(o => {
+                  const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+                  return `<tr>
+                    <td class="co-dept-cell">${o.department ? esc(o.department) : '—'}</td>
+                    <td class="co-meal-cell">${esc(label)}${o.notes ? `<div class="co-line-notes">📝 ${esc(o.notes)}</div>` : ''}</td>
+                    <td class="co-count-cell">${o.meals}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+            <div class="co-sum"><span>إجمالي عدد الوجبات</span><span>${g.totalMeals} وجبة</span></div>
           </div>
         `).join('');
       } catch (e) {}
     }
 
+    document.getElementById('coDateInput').value = coSelectedDate;
+    coUpdateTitle();
     loadOrders();
     setInterval(loadOrders, 8000);
     loadCompanyOrders();
-    setInterval(loadCompanyOrders, 8000);
+    setInterval(function () { if (coSelectedDate === coTodayStr()) loadCompanyOrders(); }, 8000);
   </script>
   <?php include __DIR__ . '/_alerts.php'; ?>
-<script src="?asset=app.js"></script>
 </body>
 </html>

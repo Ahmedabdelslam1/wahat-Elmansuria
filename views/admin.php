@@ -24,10 +24,12 @@
     }
     .header h1 { font-size: 17px; font-weight: 800; }
     .header .user { font-size: 11.5px; color: var(--accent2); }
+    .header-logo { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background:#fff; flex-shrink:0; }
+    .header-brand { display:flex; align-items:center; gap:8px; }
     .logout { background: transparent; border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 6px 13px; border-radius: 10px; font-size: 12px; cursor: pointer; font-family:inherit; font-weight:700; }
     .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; overflow-x:auto; }
     .tab { flex-shrink:0; min-width: 90px; padding: 12px 10px; text-align: center; border: none; background: none; font-size: 12.5px; font-family:inherit; font-weight:700; cursor: pointer; color: var(--muted); border-bottom: 3px solid transparent; }
-    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); text-shadow: 0 0 10px rgba(255,59,48,0.55); }
     .panel { padding: 16px; display: none; }
     .panel.active { display: block; }
     .card { background: var(--surface); border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(20,20,30,0.05); border: 1px solid var(--border); }
@@ -89,45 +91,21 @@
     .act-add { background:#e7f8ec; color:#34c759; }
     .act-cancel { background:#fff3e0; color:#ef6c00; }
     .act-del { background:#ffebe9; color:#ff3b30; }
-    .menu-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
-    .menu-search{flex:1;min-width:220px;position:relative}
-    .menu-search input{width:100%;padding:13px 42px 13px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;font-family:inherit;font-size:13px;outline:none}
-    .menu-search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,59,48,.08)}
-    .menu-search:before{content:'🔎';position:absolute;right:14px;top:11px;font-size:16px;z-index:1}
-    .menu-filter{min-width:170px;padding:12px;border:1px solid var(--border);border-radius:14px;background:#fff;font-family:inherit;font-weight:700}
-    .menu-add-btn{white-space:nowrap}
-    .menu-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-    .menu-stat{background:linear-gradient(135deg,#fff,#f8f9fc);border:1px solid var(--border);border-radius:14px;padding:12px}
-    .menu-stat .v{font-size:20px;font-weight:800}.menu-stat .l{font-size:10px;color:var(--muted);font-weight:700;margin-top:3px}
-    .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
-    .menu-item-card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;transition:.18s;box-shadow:0 3px 12px rgba(20,20,30,.04)}
-    .menu-item-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,20,30,.08)}
-    .menu-item-image{height:145px;background:linear-gradient(135deg,#f1f2f6,#e8e9ef);position:relative;overflow:hidden}
-    .menu-item-image img{width:100%;height:100%;object-fit:cover}
-    .menu-status{position:absolute;top:10px;left:10px;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:800;background:#e7f8ec;color:#198754}
-    .menu-status.off{background:#ffebe9;color:#d32f2f}
-    .menu-item-body{padding:12px}.menu-item-cat{font-size:10px;color:var(--primary);font-weight:800;margin-bottom:5px}
-    .menu-item-name{font-size:15px;font-weight:800;margin-bottom:5px}.menu-item-desc{font-size:11px;color:var(--muted);min-height:30px;line-height:1.5}
-    .menu-item-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-    .menu-price{font-size:17px;font-weight:800}.menu-price small{font-size:9px;color:var(--muted)}
-    .menu-actions{display:flex;gap:5px}.menu-actions button{border:0;border-radius:9px;padding:7px 9px;font-family:inherit;font-weight:800;font-size:10px;cursor:pointer}
-    .menu-empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
-    @media(max-width:600px){.menu-summary{grid-template-columns:1fr 1fr}.menu-grid{grid-template-columns:1fr}.menu-toolbar{align-items:stretch}.menu-search,.menu-filter,.menu-add-btn{width:100%}}
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>⚙️ لوحة المدير</h1>
-      <div class="user"><?= e($user['name']) ?></div>
+    <div class="header-brand">
+      <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
+      <div>
+        <h1>⚙️ لوحة المدير</h1>
+        <div class="user"><?= e($user['name']) ?></div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <a href="?page=cashier" style="color:#ff9500;font-size:12px;text-decoration:none;font-weight:700">الكاشير</a>
       <a href="?page=kitchen" style="color:#34c759;font-size:12px;text-decoration:none;font-weight:700">المطبخ</a>
-      <button class="logout" id="soundBtn" style="background:linear-gradient(135deg,#c62828,#ff5252);border-color:#ff5252;margin-inline-end:8px">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -182,31 +160,15 @@
   <!-- Menu Management -->
   <div class="panel" id="panel-menu">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-        <div><h3 style="font-size:18px;margin-bottom:3px">🍽️ إدارة المنيو</h3><div style="font-size:11px;color:var(--muted)">إدارة الأصناف والأسعار والأقسام من مكان واحد</div></div>
-        <button class="primary menu-add-btn" onclick="newMenuItem()">＋ إضافة صنف جديد</button>
-      </div>
-      <div class="menu-summary">
-        <div class="menu-stat"><div class="v" id="menuTotalCount">0</div><div class="l">إجمالي الأصناف</div></div>
-        <div class="menu-stat"><div class="v" id="menuActiveCount">0</div><div class="l">أصناف متاحة</div></div>
-        <div class="menu-stat"><div class="v" id="menuCategoryCount">0</div><div class="l">الأقسام</div></div>
-      </div>
-      <div class="menu-toolbar">
-        <div class="menu-search"><input id="menuSearch" placeholder="ابحث باسم الصنف أو القسم..." oninput="filterMenuAdmin()"></div>
-        <select id="menuCategoryFilter" class="menu-filter" onchange="filterMenuAdmin()"><option value="">كل الأقسام</option></select>
-        <select id="menuStatusFilter" class="menu-filter" onchange="filterMenuAdmin()"><option value="">كل الحالات</option><option value="1">متاح</option><option value="0">مخفي</option></select>
-      </div>
-      <div id="itemFormCard" style="display:none;border:1px solid #ffd5d2;background:#fffafa;border-radius:16px;padding:15px;margin-bottom:14px">
-        <h3 id="itemFormTitle" style="margin-bottom:12px">إضافة صنف جديد</h3>
-        <div class="form-row"><label>اسم الصنف</label><input id="itemName"></div>
-        <div class="form-row"><label>القسم</label><input id="itemCat" placeholder="مثل: المشويات بالكيلو"></div>
-        <div class="form-row"><label>السعر (ج.م)</label><input id="itemPrice" type="number" min="0" step="0.01"></div>
-        <div class="form-row"><label>الوصف</label><input id="itemDesc"></div>
-        <div class="form-row"><label>رابط الصورة</label><input id="itemImage" placeholder="https://..."></div>
-        <input type="hidden" id="itemId" value="">
-        <button class="primary" id="saveItemBtn" onclick="saveItem()">💾 حفظ الصنف</button>
-        <button class="primary" id="cancelEditBtn" style="background:#eee;color:#555;display:none;margin-right:6px" onclick="cancelEditItem()">إلغاء</button>
-      </div>
+      <h3 id="itemFormTitle">إضافة صنف جديد</h3>
+      <div class="form-row"><label>الاسم</label><input id="itemName"></div>
+      <div class="form-row"><label>القسم</label><input id="itemCat" placeholder="مثل: المشويات بالكيلو"></div>
+      <div class="form-row"><label>السعر (ج.م)</label><input id="itemPrice" type="number"></div>
+      <div class="form-row"><label>الوصف (اختياري)</label><input id="itemDesc"></div>
+      <div class="form-row"><label>رابط صورة حقيقية (اختياري - يُستخدم صورة القسم تلقائيًا إن تُرك فارغًا)</label><input id="itemImage" placeholder="https://..."></div>
+      <input type="hidden" id="itemId" value="">
+      <button class="primary" id="saveItemBtn" onclick="saveItem()">حفظ الصنف</button>
+      <button class="primary" id="cancelEditBtn" style="background:#eee;color:#555;display:none;margin-right:6px" onclick="cancelEditItem()">إلغاء</button>
     </div>
     <div id="menuList" class="card" style="display:none"></div>
   </div>
@@ -315,29 +277,22 @@
     <div class="card">
       <h3>📱 واتساب المطعم لاستقبال الطلبات</h3>
       <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
-        كل طلب جديد يُرسل تلقائيًا بهدفاته الكاملة على هذا الرقم عبر واتساب (يتطلب بيانات WhatsApp Cloud API بالأسفل).
-        <b>بدون توكن:</b> يظهر زر «📤 إرسال على واتس» في الكاشير ولوحة الطلبات وأيضًا للعميل بعد الطلب — يفتح الواتس بالرسالة جاهزة بنقرة واحدة على هذا الرقم، ومن هاتف المطعم يمكن تمريرها لجروب الشيفات.
+        كل طلب جديد يظهر بتفاصيله الكاملة جاهزًا للإرسال على هذا الرقم عبر واتساب.
+        يظهر زر «📤 إرسال على واتس» في الكاشير ولوحة الطلبات وأيضًا للعميل بعد الطلب — يفتح الواتس بالرسالة جاهزة بنقرة واحدة على هذا الرقم، ومن هاتف المطعم يمكن تمريرها لجروب الشيفات.
         اكتبه بالصيغة الدولية بدون + مثل: 201153431728
       </p>
       <div class="form-row"><label>رقم واتساب المطعم المخصص للطلبات</label><input id="setOrdersWhatsapp" placeholder="201153431728"></div>
     </div>
-    <div class="card">
-      <h3>تنبيهات تليجرام (اختياري)</h3>
-      <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">لاستقبال إشعار فوري بكل طلب جديد على تليجرام</p>
-      <div class="form-row"><label>Bot Token</label><input id="setTelegramToken" placeholder="123456:ABC-..."></div>
-      <div class="form-row"><label>Chat ID</label><input id="setTelegramChat" placeholder="مثل 123456789"></div>
-    </div>
-    <div class="card">
-      <h3>واتساب تلقائي للعميل (WhatsApp Cloud API)</h3>
-      <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
-        لإرسال تأكيد الطلب وتحديثات الحالة تلقائيًا لواتساب العميل <strong>بدون فتح أي رابط أو تدخل يدوي</strong>،
-        يجب أن يكون لديك حساب <strong>WhatsApp Business Platform</strong> من Meta for Developers (رقم مُعتمد + Access Token).
-        رقم واتساب شخصي عادي لا يدعم الإرسال الآلي. بدون هذه البيانات لن يتم إرسال أي رسائل تلقائية (باقي النظام يعمل بشكل طبيعي).
-      </p>
-      <div class="form-row"><label>Phone Number ID</label><input id="setWaPhoneId" placeholder="من Meta for Developers"></div>
-      <div class="form-row"><label>Access Token</label><input id="setWaToken" placeholder="Permanent/System User Token"></div>
-    </div>
     <button class="primary" id="saveSettingsBtn" onclick="saveSettings()">حفظ الإعدادات</button>
+
+    <div class="card" style="border:1.5px solid #ff3b30;margin-top:18px">
+      <h3 style="color:#ff3b30">⚠️ منطقة الخطر</h3>
+      <p style="font-size:11.5px;color:var(--muted);margin-bottom:10px">
+        تصفير الحسابات يحذف <b>كل الطلبات</b> و <b>كل بنود طلبات الشركات</b> نهائيًا من قاعدة البيانات (بداية جديدة بالكامل).
+        هذا الإجراء <b>لا يمكن التراجع عنه</b>. لا يؤثر على المنيو أو المستخدمين أو الإعدادات.
+      </p>
+      <button class="primary" id="resetAccountsBtn" style="background:linear-gradient(90deg,#ff3b30,#c1271b)" onclick="resetAccounts()">🗑️ تصفير الحسابات بالكامل</button>
+    </div>
   </div>
 
   <script>
@@ -376,14 +331,29 @@
         document.getElementById('setRestaurantName').value = s.restaurantName || '';
         document.getElementById('setPhone').value = s.phone || '';
         document.getElementById('setAddress').value = s.address || '';
-        document.getElementById('setTelegramToken').value = s.telegramBotToken || '';
-        document.getElementById('setTelegramChat').value = s.telegramChatId || '';
-        document.getElementById('setWaPhoneId').value = s.whatsappPhoneId || '';
-        document.getElementById('setWaToken').value = s.whatsappToken || '';
         document.getElementById('setOrdersWhatsapp').value = s.ordersWhatsapp || '';
         document.getElementById('setDeliveryFee').value = s.deliveryFee || 0;
         document.getElementById('setLogo').value = s.logo || '';
       } catch (e) {}
+    }
+
+    async function resetAccounts() {
+      const step1 = confirm('⚠️ سيتم حذف كل الطلبات وكل طلبات الشركات نهائيًا ولا يمكن التراجع عن هذا الإجراء.\n\nهل أنت متأكد تمامًا؟');
+      if (!step1) return;
+      const typed = prompt('للتأكيد النهائي، اكتب كلمة "تصفير" بالضبط:');
+      if (typed !== 'تصفير') { alert('تم إلغاء العملية — الكلمة غير مطابقة'); return; }
+      const btn = document.getElementById('resetAccountsBtn');
+      btn.disabled = true;
+      try {
+        const res = await api('reset_accounts', { confirm: 'تصفير' });
+        btn.disabled = false;
+        if (res.success) {
+          alert('تم تصفير الحسابات بنجاح ✅\nتم حذف ' + res.deletedOrders + ' طلب و ' + res.deletedCompanyItems + ' بند شركة.');
+          if (typeof loadDashboard === 'function') loadDashboard();
+        } else {
+          alert(res.message || 'حدث خطأ');
+        }
+      } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
     }
 
     async function saveSettings() {
@@ -394,10 +364,6 @@
           restaurantName: document.getElementById('setRestaurantName').value.trim(),
           phone: document.getElementById('setPhone').value.trim(),
           address: document.getElementById('setAddress').value.trim(),
-          telegramBotToken: document.getElementById('setTelegramToken').value.trim(),
-          telegramChatId: document.getElementById('setTelegramChat').value.trim(),
-          whatsappPhoneId: document.getElementById('setWaPhoneId').value.trim(),
-          whatsappToken: document.getElementById('setWaToken').value.trim(),
           ordersWhatsapp: document.getElementById('setOrdersWhatsapp').value.trim(),
           deliveryFee: document.getElementById('setDeliveryFee').value.trim(),
           logo: document.getElementById('setLogo').value.trim(),
@@ -406,61 +372,6 @@
         if (res.success) alert('تم حفظ الإعدادات بنجاح');
         else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
-    }
-
-    let adminMenuItems = [];
-
-    function newMenuItem() {
-      editingItemId = null;
-      document.getElementById('itemFormCard').style.display = 'block';
-      document.getElementById('itemFormTitle').textContent = '➕ إضافة صنف جديد';
-      document.getElementById('itemId').value = '';
-      ['itemName','itemCat','itemPrice','itemDesc','itemImage'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('cancelEditBtn').style.display = 'none';
-      document.getElementById('itemName').focus();
-    }
-
-    function filterMenuAdmin() {
-      const q = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
-      const cat = document.getElementById('menuCategoryFilter').value;
-      const status = document.getElementById('menuStatusFilter').value;
-      const rows = adminMenuItems.filter(i =>
-        (!q || String(i.name||'').toLowerCase().includes(q) || String(i.category||'').toLowerCase().includes(q)) &&
-        (!cat || String(i.category||'') === cat) &&
-        (status === '' || String(i.active ? 1 : 0) === status)
-      );
-      renderMenuCards(rows);
-    }
-
-    function renderMenuCards(items) {
-      const box = document.getElementById('menuList');
-      box.style.display = 'block';
-      if (!items.length) {
-        box.innerHTML = '<div class="menu-empty">🔎 لا توجد أصناف مطابقة للبحث أو الفلاتر</div>';
-        return;
-      }
-      box.innerHTML = '<div class="menu-grid">' + items.map(i => {
-        const image = esc(i.image || '');
-        const active = Number(i.active) === 1;
-        return '<div class="menu-item-card">' +
-          '<div class="menu-item-image">' +
-          (image ? '<img src="' + image + '" alt="' + esc(i.name) + '" onerror="this.style.display=\'none\'">' : '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:42px">🍽️</div>') +
-          '<span class="menu-status ' + (active ? '' : 'off') + '">' + (active ? '● متاح' : '● مخفي') + '</span>' +
-          '</div><div class="menu-item-body">' +
-          '<div class="menu-item-cat">' + esc(i.category || 'بدون قسم') + '</div>' +
-          '<div class="menu-item-name">' + esc(i.name) + '</div>' +
-          '<div class="menu-item-desc">' + esc(i.descr || i.desc || 'لا يوجد وصف') + '</div>' +
-          '<div class="menu-item-foot"><div class="menu-price">' + Number(i.price || 0).toLocaleString('ar-EG') + ' <small>ج.م</small></div>' +
-          '<div class="menu-actions">' +
-          '<button class="act-edit" onclick="editItemById(' + Number(i.id) + ')">✏️ تعديل</button>' +
-          '<button class="act-del" onclick="deleteItem(' + Number(i.id) + ', \' ' + String(i.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')">🗑️</button>' +
-          '</div></div></div></div>';
-      }).join('') + '</div>';
-    }
-
-    function editItemById(id) {
-      const i = adminMenuItems.find(x => Number(x.id) === Number(id));
-      if (i) editItem(i);
     }
 
     // ===== Dashboard =====
@@ -673,7 +584,6 @@
         if (!res.success) { box.innerHTML = 'خطأ'; return; }
       window.adminOrdersCache = {};
       res.orders.slice(0, 30).forEach(o => { window.adminOrdersCache[o.order_id] = o; });
-      if (window.__sirenCheck) __sirenCheck(res.orders, true);
       box.innerHTML = res.orders.slice(0, 30).map(o => {
         const canEdit = ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status);
         const typeLabel = o.order_type === 'شركات' ? '🏢' : (o.order_type === 'دليفري' ? '🛵' : '🍽️');
@@ -700,43 +610,47 @@
       try {
         const res = await api('menu');
         if (!res.success) return;
-        adminMenuItems = res.items || [];
-        const categories = [...new Set(adminMenuItems.map(i => String(i.category || '').trim()).filter(Boolean))].sort();
-        const select = document.getElementById('menuCategoryFilter');
-        const current = select.value;
-        select.innerHTML = '<option value="">كل الأقسام</option>' + categories.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
-        if (categories.includes(current)) select.value = current;
-        document.getElementById('menuTotalCount').textContent = adminMenuItems.length;
-        document.getElementById('menuActiveCount').textContent = adminMenuItems.filter(i => Number(i.active) === 1).length;
-        document.getElementById('menuCategoryCount').textContent = categories.length;
-        filterMenuAdmin();
-      } catch (e) {
-        document.getElementById('menuList').innerHTML = '<div class="menu-empty">تعذر تحميل المنيو</div>';
-      }
+        const container = document.getElementById('menuList');
+        container.style.display = 'block';
+        container.innerHTML = '<h3 style="margin-bottom:10px">الأصناف الحالية (' + res.items.length + ')</h3>';
+        res.items.forEach(i => {
+          const row = document.createElement('div');
+          row.className = 'menu-row';
+          row.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:180px">
+              <img class="menu-thumb" src="${i.image}" alt="">
+              <div>
+                <strong>${esc(i.name)}</strong><br>
+                <span style="color:var(--muted);font-size:12px">${esc(i.category)} — ${i.price} ج.م</span>
+              </div>
+            </div>
+            <button onclick='editItem(${JSON.stringify(i).replace(/'/g, "&#39;")})'>تعديل</button>
+          `;
+          container.appendChild(row);
+        });
+      } catch (e) {}
     }
 
     function editItem(item) {
       editingItemId = item.id;
-      document.getElementById('itemFormCard').style.display = 'block';
-      document.getElementById('itemFormTitle').textContent = '✏️ تعديل صنف: ' + item.name;
+      document.getElementById('itemFormTitle').textContent = 'تعديل صنف: ' + item.name;
       document.getElementById('itemId').value = item.id;
       document.getElementById('itemName').value = item.name;
-      document.getElementById('itemCat').value = item.category || '';
+      document.getElementById('itemCat').value = item.category;
       document.getElementById('itemPrice').value = item.price;
-      document.getElementById('itemDesc').value = item.desc || item.descr || '';
+      document.getElementById('itemDesc').value = item.desc || '';
       document.getElementById('itemImage').value = item.image || '';
       document.getElementById('cancelEditBtn').style.display = 'inline-block';
-      document.getElementById('saveItemBtn').textContent = '💾 حفظ التعديل';
-      document.getElementById('itemFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+      document.getElementById('saveItemBtn').textContent = 'حفظ التعديل';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function cancelEditItem() {
       editingItemId = null;
-      document.getElementById('itemFormCard').style.display = 'none';
       document.getElementById('itemFormTitle').textContent = 'إضافة صنف جديد';
       ['itemId','itemName','itemCat','itemPrice','itemDesc','itemImage'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('cancelEditBtn').style.display = 'none';
-      document.getElementById('saveItemBtn').textContent = '💾 حفظ الصنف';
+      document.getElementById('saveItemBtn').textContent = 'حفظ الصنف';
     }
 
     async function saveItem() {
@@ -746,7 +660,7 @@
         category: document.getElementById('itemCat').value.trim(),
         price: parseFloat(document.getElementById('itemPrice').value) || 0,
         desc: document.getElementById('itemDesc').value.trim(),
-        image: document.getElementById('itemImage').value.trim()
+        image: document.getElementById('itemImage').value.trim(),
       };
       if (!item.name || !item.price) { alert('أدخل الاسم والسعر'); return; }
       const btn = document.getElementById('saveItemBtn');
@@ -757,18 +671,6 @@
         if (res.success) { cancelEditItem(); loadMenuAdmin(); }
         else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
-    }
-
-    async function deleteItem(id, name) {
-      if (!confirm('هل أنت متأكد من حذف الصنف «' + name + '» نهائيًا؟\n\nسيتم حذفه من المنيو ولن يظهر للعملاء.')) return;
-      try {
-        const res = await api('delete_item', { id });
-        if (res.success) {
-          if (Number(editingItemId) === Number(id)) cancelEditItem();
-          await loadMenuAdmin();
-          alert('تم حذف الصنف بنجاح');
-        } else alert(res.message || 'تعذر حذف الصنف');
-      } catch (e) { alert('خطأ في الاتصال بالسيرفر'); }
     }
 
     // ===== Users management =====
@@ -883,8 +785,6 @@
     loadDashboard();
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
-  <?php include __DIR__ . '/_alerts.php'; ?>
-<script src="?asset=app.js"></script>
-<script src="?asset=app.js"></script>
+  <?php include __DIR__ . '/_wa.php'; ?>
 </body>
 </html>

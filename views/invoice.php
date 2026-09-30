@@ -97,7 +97,6 @@
     }
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="invoice" id="invoiceBox">
@@ -177,11 +176,9 @@
         document.getElementById('restName').textContent = r.name;
         document.getElementById('restAddress').textContent = r.address;
         document.getElementById('restPhone').textContent = '☎ ' + r.phone;
-        if (r.logo) {
-          const lg = document.getElementById('restLogo');
-          lg.src = r.logo;
-          lg.style.display = 'block';
-        }
+        const lg = document.getElementById('restLogo');
+        lg.src = r.logo || 'assets/icons/icon-512.png';
+        lg.style.display = 'block';
         document.getElementById('orderId').textContent = o.order_id;
         document.getElementById('orderDate').textContent = o.created_at || '-';
         document.getElementById('customerName').textContent = o.customer_name || '-';
@@ -225,6 +222,5 @@
       });
     }
   </script>
-<script src="?asset=app.js"></script>
 </body>
 </html>

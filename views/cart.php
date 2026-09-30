@@ -112,8 +112,6 @@
     }
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="topbar">
@@ -129,9 +127,6 @@
   <div class="items" id="cartItems"></div>
 
   <div class="form-section" id="orderForm" style="display:none">
-    <div class="type-row" style="background:#fff3e0;border:1px solid #ff9500;border-radius:12px;padding:10px;text-align:center;font-weight:800;font-size:13px;color:#ef6c00">
-      🛵 كل طلبات الموقع تُوصل دليفري
-    </div>
     <input type="text" id="customerName" placeholder="الاسم">
     <input type="tel" id="phone" placeholder="رقم الهاتف">
     <input type="text" id="address" placeholder="📍 عنوان التوصيل">
@@ -225,6 +220,26 @@
       render();
     }
 
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    // تنبيه هادئ داخل الصفحة (بلا صوت نظام أو نافذة alert المزعجة)
+    function showToast(msg, isError) {
+      var old = document.getElementById('cartToast');
+      if (old) old.remove();
+      var t = document.createElement('div');
+      t.id = 'cartToast';
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;left:16px;right:16px;bottom:18px;z-index:99999;background:'
+        + (isError ? '#ff3b30' : '#1f1f2c') + ';color:#fff;padding:13px 16px;border-radius:14px;font-size:13.5px;'
+        + 'font-weight:700;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3);font-family:inherit';
+      document.body.appendChild(t);
+      setTimeout(function () { t.remove(); }, 3500);
+    }
+
     async function placeOrder() {
       if (cart.length === 0) return;
       const name = document.getElementById('customerName').value.trim();
@@ -233,11 +248,11 @@
       const address = document.getElementById('address').value.trim();
 
       if (!name || !phone) {
-        alert('يرجى إدخال الاسم ورقم الهاتف');
+        showToast('يرجى إدخال الاسم ورقم الهاتف', true);
         return;
       }
       if (cartType === 'دليفري' && !address) {
-        alert('يرجى إدخال عنوان التوصيل');
+        showToast('يرجى إدخال عنوان التوصيل', true);
         return;
       }
 
@@ -260,31 +275,33 @@
           render();
           showOrderDone(res);
         } else {
-          alert(res.message || 'حدث خطأ');
+          showToast(res.message || 'حدث خطأ', true);
         }
       } catch (e) {
         btn.disabled = false;
-        alert('خطأ: ' + (e.message || 'فشل الاتصال بالسيرفر'));
+        showToast('خطأ: ' + (e.message || 'فشل الاتصال بالسيرفر'), true);
       }
     }
 
     render();
 
-    // إشعار نجاح الطلب + إرسال على واتس المطعم بنقرة واحدة (بدون توكن)
+    // إشعار نجاح الطلب برقم الطلب + إرسال على واتس المطعم بنقرة واحدة (بدون توكن)
     function showOrderDone(res) {
       var d = document.createElement('div');
       d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px';
       d.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;text-align:center;font-family:inherit;box-shadow:0 18px 50px rgba(0,0,0,.35)">'
         + '<div style="font-size:36px">✅</div>'
         + '<div style="font-weight:800;font-size:15px;margin:8px 0 4px">' + esc(res.message || 'تم استلام طلبك بنجاح!') + '</div>'
-        + '<div style="color:#8b8b9a;font-size:12.5px;margin-bottom:14px">الإجمالي ' + (res.total || '') + ' ج.م — سنتواصل معك قريبًا 🛵</div>'
+        + '<div style="background:#f4f5fa;border-radius:12px;padding:10px;margin-bottom:10px">'
+        + '<div style="color:#8b8b9a;font-size:11px;font-weight:700">رقم الطلب</div>'
+        + '<div style="font-size:19px;font-weight:800;letter-spacing:.3px">' + esc(res.orderId || '') + '</div>'
+        + '</div>'
+        + '<div style="color:#8b8b9a;font-size:12.5px;margin-bottom:14px">الإجمالي ' + esc(res.total ?? '') + ' ج.م — سنتواصل معك قريبًا 🛵</div>'
         + (res.wa_restaurant ? '<a href="' + res.wa_restaurant + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:#128C7E;color:#fff;border-radius:12px;padding:12px 18px;font-size:14px;font-weight:800;margin-bottom:8px">📤 إرسال الطلب على واتس المطعم (نقرة واحدة)</a>' : '')
         + '<button onclick="window.location.href=\'?page=menu\'" style="background:#eee;color:#555;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;width:100%">متابعة الطلب والمينيو</button>'
         + '</div>';
       document.body.appendChild(d);
     }
   </script>
-<script src="?asset=app.js"></script>
-<script src="?asset=app.js"></script>
 </body>
 </html>

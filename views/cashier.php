@@ -24,6 +24,8 @@
     }
     .header h1 { font-size: 15.5px; font-weight: 800; }
     .header .user { font-size: 11px; color: var(--accent2); }
+    .header-logo { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background:#fff; flex-shrink:0; }
+    .header-brand { display:flex; align-items:center; gap:8px; }
     .logout, .sound-btn {
       background: transparent; border: 1px solid rgba(255,255,255,0.25); color: #fff;
       padding: 6px 12px; border-radius: 10px; font-size: 11.5px; cursor: pointer; font-family:inherit; font-weight:700;
@@ -47,7 +49,7 @@
       font-size: 12px; font-family: inherit; font-weight: 700; cursor: pointer;
       color: var(--muted); border-bottom: 3px solid transparent;
     }
-    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); text-shadow: 0 0 10px rgba(255,59,48,0.55); }
     .panel { display: none; }
     .panel.active { display: block; }
 
@@ -104,20 +106,20 @@
 
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>🧾 لوحة الكاشير</h1>
-      <div class="user"><?= e($user['name']) ?> (<?= e($user['role']) ?>)</div>
+    <div class="header-brand">
+      <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
+      <div>
+        <h1>🧾 لوحة الكاشير</h1>
+        <div class="user"><?= e($user['name']) ?> (<?= e($user['role']) ?>)</div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <?php if ($user['role'] === 'admin'): ?>
         <a href="?page=admin" style="color:#ff9500;font-size:11.5px;text-decoration:none;font-weight:700">لوحة المدير</a>
       <?php endif; ?>
-      <button class="sound-btn" id="soundBtn">🚨 الإنذار</button>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
   </div>
@@ -137,7 +139,7 @@
   </div>
 
   <!-- POS: طلب جديد (شاشة مشتركة مع لوحة المدير) -->
-  <?php $posActive = true; $posAllowCompany = true; include __DIR__ . '/_pos.php'; ?>
+  <?php $posActive = true; $posAllowCompany = false; include __DIR__ . '/_pos.php'; ?>
 
   <!-- الطلبات -->
   <div class="panel" id="panel-orders">
@@ -264,7 +266,6 @@
       if (knownOrderIds.size > 0) {
         let hasNew = false;
         ids.forEach(id => { if (!knownOrderIds.has(id)) hasNew = true; });
-        if (hasNew && window.__sirenAlert) __sirenAlert('🚨 طلب جديد!');
       }
       knownOrderIds = ids;
     }
@@ -551,8 +552,6 @@
     setInterval(() => loadOrders(currentFilter), 12000);
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
-  <?php include __DIR__ . '/_alerts.php'; ?>
-<script src="?asset=app.js"></script>
-<script src="?asset=app.js"></script>
+  <?php include __DIR__ . '/_wa.php'; ?>
 </body>
 </html>

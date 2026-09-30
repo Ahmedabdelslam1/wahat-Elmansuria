@@ -57,7 +57,8 @@
       display: none; align-items: center; justify-content: center;
       border: 2px solid var(--dark);
     }
-    .brand { flex: 1; text-align: center; }
+    .brand { flex: 1; text-align: center; display:flex; align-items:center; justify-content:center; gap:7px; }
+    .brand-logo { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; background:#fff; flex-shrink:0; }
     .brand-name { color: #fff; font-size: 14.5px; font-weight: 800; }
     .brand-sub { color: var(--accent2); font-size: 9px; margin-top: 1px; }
 
@@ -78,8 +79,8 @@
 
     .cats {
       display: flex;
-      gap: 10px;
-      padding: 12px 14px 8px;
+      gap: 16px;
+      padding: 12px 16px 10px;
       overflow-x: auto;
     }
     .cats::-webkit-scrollbar{ display:none; }
@@ -117,31 +118,40 @@
     .offer-card .orow { display:flex; align-items:center; justify-content:space-between; }
     .offer-card .oprice { font-size: 12px; font-weight: 800; color: #ffb020; }
     .offer-card .oadd { border:none; background: linear-gradient(90deg,var(--primary),var(--primary-dark)); color:#fff; font-weight:800; font-size:9.5px; padding:4px 8px; border-radius:7px; cursor:pointer; }
-    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 40px; }
+    .cat-item { flex-shrink: 0; text-align: center; cursor: pointer; width: 52px; }
     .cat-circle {
-      width: 32px; height: 32px; border-radius: 50%;
+      width: 46px; height: 46px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-      margin: 0 auto 3px;
+      font-size: 20px;
+      margin: 0 auto 5px;
       border: 2px solid transparent;
-      transition: transform .15s;
+      transition: transform .15s, box-shadow .15s;
       overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,59,48,0.12), 0 4px 12px -4px rgba(255,59,48,0.35);
     }
     .cat-circle img { width: 100%; height: 100%; object-fit: cover; }
-    .cat-item.active .cat-circle { border-color: var(--primary); transform: scale(1.1); box-shadow: 0 4px 14px -3px rgba(255,59,48,0.5); }
-    .cat-label { font-size: 8px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .cat-item.active .cat-circle { border-color: var(--primary); transform: scale(1.12); box-shadow: 0 0 0 2px rgba(255,59,48,0.35), 0 4px 16px -3px rgba(255,59,48,0.7); }
+    .cat-label { font-size: 9.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .cat-item.active .cat-label { color: var(--text); }
 
     /* ===== كروت صغيرة مضيئة، 3 أعمدة على الموبايل ===== */
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 14px;
       padding: 10px 12px 20px;
     }
-    @media (min-width: 420px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 14px 16px; } }
+    @media (min-width: 420px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 10px 14px 16px; } }
     @media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }
     @media (min-width: 900px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+    .menu-section { margin-bottom: 26px; }
+    .menu-section:last-child { margin-bottom: 4px; }
+    .menu-section-title {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px; margin: 4px 0 10px;
+      font-size: 13.5px; font-weight: 800; color: var(--text);
+    }
+    .menu-section-title .line { flex: 1; height: 1px; background: var(--border); }
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -200,7 +210,6 @@
     }
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <div class="topbar">
@@ -211,8 +220,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     </a>
     <div class="brand">
-      <div class="brand-name">🌴 <?= e(APP_NAME) ?></div>
-      <div class="brand-sub">أصل المندي والمشوي</div>
+      <img class="brand-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
+      <div style="text-align:center">
+        <div class="brand-name"><?= e(APP_NAME) ?></div>
+        <div class="brand-sub">أصل المندي والمشوي</div>
+      </div>
     </div>
     <a class="icon-btn" href="?page=cart" title="السلة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
@@ -233,7 +245,7 @@
   </div>
 
   <div class="cats" id="categories"></div>
-  <div class="grid" id="itemsList"></div>
+  <div id="itemsList"></div>
 
   <button class="fab-cart" id="fabCart" style="display:none" onclick="location.href='?page=cart'">
     <span><span class="count-badge" id="fabCount">0</span>عرض السلة</span>
@@ -359,6 +371,45 @@
       renderItems();
     }
 
+    function makeItemCard(item) {
+      const color = colorFor(item.category);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.boxShadow = `0 6px 16px -6px ${hexToRgba(color.bg, 0.5)}`;
+
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      const img = document.createElement('img');
+      img.src = item.image;
+      img.alt = item.name;
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+      const chip = document.createElement('span');
+      chip.className = 'cat-chip';
+      chip.textContent = emojiFor(item.category);
+      thumb.appendChild(chip);
+
+      const body = document.createElement('div');
+      body.className = 'body';
+      const h3 = document.createElement('h3');
+      h3.textContent = item.name;
+      const priceRow = document.createElement('div');
+      priceRow.className = 'price-row';
+      const price = document.createElement('div');
+      price.className = 'price';
+      price.innerHTML = item.price + ' <small>ج.م</small>';
+      const btn = document.createElement('button');
+      btn.className = 'add-btn';
+      btn.style.background = color.bg;
+      btn.textContent = '+';
+      btn.onclick = () => addToCart(item, btn);
+      priceRow.append(price, btn);
+
+      body.append(h3, priceRow);
+      card.append(thumb, body);
+      return card;
+    }
+
     function renderItems() {
       let items = activeCat === 'all' ? allItems : allItems.filter(i => i.category === activeCat);
       if (searchTerm) items = items.filter(i => i.name.toLowerCase().includes(searchTerm));
@@ -369,43 +420,33 @@
         list.innerHTML = '<div class="empty-state">لا توجد أصناف مطابقة</div>';
         return;
       }
+
+      // تجميع الأصناف في أقسام حسب التصنيف مع مسافة واضحة بين كل قسم والتالي
+      const order = [];
+      const groups = {};
       items.forEach(item => {
-        const color = colorFor(item.category);
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style.boxShadow = `0 6px 16px -6px ${hexToRgba(color.bg, 0.5)}`;
+        const cat = item.category || 'أخرى';
+        if (!groups[cat]) { groups[cat] = []; order.push(cat); }
+        groups[cat].push(item);
+      });
 
-        const thumb = document.createElement('div');
-        thumb.className = 'thumb';
-        const img = document.createElement('img');
-        img.src = item.image;
-        img.alt = item.name;
-        img.loading = 'lazy';
-        thumb.appendChild(img);
-        const chip = document.createElement('span');
-        chip.className = 'cat-chip';
-        chip.textContent = emojiFor(item.category);
-        thumb.appendChild(chip);
+      order.forEach(cat => {
+        const section = document.createElement('div');
+        section.className = 'menu-section';
 
-        const body = document.createElement('div');
-        body.className = 'body';
-        const h3 = document.createElement('h3');
-        h3.textContent = item.name;
-        const priceRow = document.createElement('div');
-        priceRow.className = 'price-row';
-        const price = document.createElement('div');
-        price.className = 'price';
-        price.innerHTML = item.price + ' <small>ج.م</small>';
-        const btn = document.createElement('button');
-        btn.className = 'add-btn';
-        btn.style.background = color.bg;
-        btn.textContent = '+';
-        btn.onclick = () => addToCart(item, btn);
-        priceRow.append(price, btn);
+        if (activeCat === 'all' && order.length > 1) {
+          const title = document.createElement('div');
+          title.className = 'menu-section-title';
+          title.innerHTML = `<span>${emojiFor(cat)} ${cat}</span><span class="line"></span>`;
+          section.appendChild(title);
+        }
 
-        body.append(h3, priceRow);
-        card.append(thumb, body);
-        list.appendChild(card);
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        groups[cat].forEach(item => grid.appendChild(makeItemCard(item)));
+        section.appendChild(grid);
+
+        list.appendChild(section);
       });
     }
 
@@ -426,6 +467,5 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
     }
   </script>
-<script src="?asset=app.js"></script>
 </body>
 </html>

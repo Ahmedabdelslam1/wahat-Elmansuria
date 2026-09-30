@@ -1,3 +1,4 @@
 data/wahat.sqlite
 data/wahat.sqlite-wal
 data/wahat.sqlite-shm
+data/sessions/

@@ -7,16 +7,9 @@ require_once __DIR__ . '/lib.php';
 boot_session();
 
 // ملف ثابت: مكتبة الاتصال بالـ API
-$asset = (string)($_GET['asset'] ?? '');
-$assetMap = [
-    'api.js' => ['assets/api.js', 'application/javascript; charset=utf-8'],
-    'app.js' => ['assets/app.js', 'application/javascript; charset=utf-8'],
-    'app.css' => ['assets/app.css', 'text/css; charset=utf-8'],
-];
-if (isset($assetMap[$asset])) {
-    header('Content-Type: ' . $assetMap[$asset][1]);
-    header('Cache-Control: public, max-age=3600');
-    readfile(__DIR__ . '/' . $assetMap[$asset][0]);
+if (($_GET['asset'] ?? '') === 'api.js') {
+    header('Content-Type: application/javascript; charset=utf-8');
+    readfile(__DIR__ . '/assets/api.js');
     exit;
 }
 
@@ -26,7 +19,7 @@ if (isset($_GET['api'])) {
     $data = json_input();
 
     // حماية CSRF لكل الطلبات المغيرة للبيانات (ما عدا الدخول)
-    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'delete_item', 'toggle_item', 'add_user', 'update_permissions', 'update_user', 'add_company_order', 'update_order', 'cancel_order', 'delete_order', 'update_company_order', 'cancel_company_order', 'delete_company_order', 'report', 'update_settings'], true)) {
+    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'update_user', 'add_company_order', 'update_order', 'cancel_order', 'delete_order', 'update_company_order', 'cancel_company_order', 'delete_company_order', 'set_company_item_status', 'report', 'update_settings', 'reset_accounts'], true)) {
         $hdr = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!hash_equals($_SESSION['csrf'], (string)$hdr)) {
             json_out(['success' => false, 'message' => 'انتهت الجلسة، أعد تحميل الصفحة']);
@@ -42,7 +35,6 @@ if (isset($_GET['api'])) {
         case 'get_orders':          api_get_orders($data); break;
         case 'update_status':       api_update_status($data); break;
         case 'save_item':           api_save_item($data); break;
-        case 'delete_item':          api_delete_item($data); break;
         case 'toggle_item':         api_toggle_item($data); break;
         case 'add_user':            api_add_user($data); break;
         case 'list_users':          api_list_users(); break;
@@ -50,15 +42,17 @@ if (isset($_GET['api'])) {
         case 'update_user':          api_update_user($data); break;
         case 'public_settings':       api_public_settings(); break;
         case 'add_company_order':     api_add_company_order($data); break;
-        case 'company_today':         api_company_today(); break;
+        case 'company_today':         api_company_today($data); break;
         case 'company_report':        api_company_report($data); break;
         case 'update_company_order':  api_update_company_order($data); break;
         case 'cancel_company_order':  api_cancel_company_order($data); break;
         case 'delete_company_order':  api_delete_company_order($data); break;
+        case 'set_company_item_status': api_set_company_item_status($data); break;
         case 'update_order':          api_update_order($data); break;
         case 'cancel_order':           api_cancel_order($data); break;
         case 'delete_order':           api_delete_order($data); break;
         case 'audit_report':           api_audit_report($data); break;
+        case 'reset_accounts':         api_reset_accounts($data); break;
         case 'report':              api_report($data); break;
         case 'dashboard':           api_dashboard(); break;
         case 'get_settings':        api_get_settings(); break;

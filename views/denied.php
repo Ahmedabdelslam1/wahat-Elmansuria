@@ -30,14 +30,10 @@
     }
   </style>
 <script src="?asset=api.js"></script>
-<link rel="stylesheet" href="?asset=app.css">
-<link rel="stylesheet" href="?asset=app.css">
 </head>
 <body>
   <h1>🚫 غير مصرح بالدخول</h1>
   <p>ليس لديك صلاحية لعرض هذه الصفحة (أو انتهت الجلسة)</p>
   <a href="?page=login">تسجيل الدخول</a>
-<script src="?asset=app.js"></script>
-<script src="?asset=app.js"></script>
 </body>
 </html>
