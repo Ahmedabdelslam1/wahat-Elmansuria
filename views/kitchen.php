@@ -112,10 +112,10 @@
     .status-tag.st-prep { background:rgba(224,134,0,0.12); color:var(--prep); }
     .status-tag.st-ready { background:rgba(31,158,70,0.12); color:var(--ready); }
     .status-tag.st-done { background:rgba(58,53,64,0.1); color:#3a3540; }
-    .ord-check { width:16px; height:16px; cursor:pointer; accent-color:var(--primary); }
-    .bulk-bar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 4px 10px; font-size:11px; flex-wrap:wrap; }
-    .bulk-bar label { display:flex; align-items:center; gap:5px; font-weight:700; color:var(--muted); cursor:pointer; }
-    .bulk-bar .toolbar-btn { font-size:10.5px; padding:5px 8px; }
+    .status-icon-btn { width:30px; height:30px; border-radius:50%; border:none; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; }
+    .col.new .status-icon-btn { background:var(--prep); }
+    .col.prep .status-icon-btn { background:var(--ready); }
+    .col.ready .status-icon-btn { background:#3a3540; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -179,8 +179,7 @@
         <button onclick="coChangeDay(1)">يوم تالي ▶</button>
         <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
         <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
-        <button class="toolbar-btn wa-btn" onclick="coShareWhatsapp()">📤 نص</button>
-        <button class="toolbar-btn wa-btn" onclick="coShareImage()">📷 صورة</button>
+        <button class="toolbar-btn wa-btn" onclick="coShareImage()">📤 إرسال</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
@@ -188,24 +187,20 @@
 
   <div class="toolbar-row">
     <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersShareWhatsapp()">📤 نص</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersShareImage()">📷 صورة</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersShareImage()">📤 إرسال جدول الطلبات</button>
   </div>
 
   <div class="board">
     <div class="col new">
       <div class="col-head"><span>🔴 جديد</span><span class="count" id="cNew">0</span></div>
-      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listNew', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listNew', 'قيد التحضير')">✅ استلام المحدد</button></div>
       <div id="listNew"></div>
     </div>
     <div class="col prep">
       <div class="col-head"><span>🟠 قيد التحضير</span><span class="count" id="cPrep">0</span></div>
-      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listPrep', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listPrep', 'جاهز')">🟢 تجهيز المحدد</button></div>
       <div id="listPrep"></div>
     </div>
     <div class="col ready">
       <div class="col-head"><span>🟢 جاهز للتسليم</span><span class="count" id="cReady">0</span></div>
-      <div class="bulk-bar"><label><input type="checkbox" onclick="toggleSelectAll('listReady', this.checked)"> تحديد الكل</label><button class="toolbar-btn" onclick="bulkUpdateStatus('listReady', 'تم التسليم')">📦 تسليم المحدد</button></div>
       <div id="listReady"></div>
     </div>
   </div>
@@ -237,7 +232,7 @@
       return `<span class="status-tag ${m[0]}">${m[1]}</span>`;
     }
 
-    function ticketHtml(o, nextLabel, nextStatus, btnClass) {
+    function ticketHtml(o, nextStatus, nextIcon, nextTitle) {
       const items = (o.items || []).map(i =>
         `<li><span>${esc(i.name)}</span><span class="qty">× ${esc(i.qty)}</span></li>`
       ).join('');
@@ -246,9 +241,11 @@
       return `
         <div class="ticket">
           <div class="top">
-            <input type="checkbox" class="ord-check" data-oid="${esc(o.order_id)}">
             <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
-            <span class="time">${timeOnly(o.created_at)}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="time">${timeOnly(o.created_at)}</span>
+              ${nextStatus ? `<button class="status-icon-btn" title="${esc(nextTitle)}" onclick="updateStatus('${esc(o.order_id)}', '${nextStatus}')">${nextIcon}</button>` : ''}
+            </div>
           </div>
           <div class="tags">
             <span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span>
@@ -256,7 +253,6 @@
           </div>
           <ul>${items}</ul>
           ${o.notes ? '<div class="notes">📝 ' + esc(o.notes) + '</div>' : ''}
-          ${nextLabel ? `<button class="${btnClass}" onclick="updateStatus('${esc(o.order_id)}', '${nextStatus}')">${nextLabel}</button>` : ''}
         </div>
       `;
     }
@@ -439,32 +435,15 @@
         document.getElementById('stReady').textContent = readys.length;
         document.getElementById('stDoneToday').textContent = doneToday.length;
 
-        renderList('listNew', news.length ? news.map(o => ticketHtml(o, 'بدء التحضير', 'قيد التحضير', 'btn-prep')).join('') : '<div class="empty">لا توجد طلبات جديدة</div>');
-        renderList('listPrep', preps.length ? preps.map(o => ticketHtml(o, 'جاهز للتسليم', 'جاهز', 'btn-ready')).join('') : '<div class="empty">لا يوجد طلبات قيد التحضير</div>');
-        renderList('listReady', readys.length ? readys.map(o => ticketHtml(o, 'تم التسليم', 'تم التسليم', 'btn-done')).join('') : '<div class="empty">لا توجد طلبات جاهزة</div>');
+        renderList('listNew', news.length ? news.map(o => ticketHtml(o, 'قيد التحضير', '▶️', 'بدء التحضير')).join('') : '<div class="empty">لا توجد طلبات جديدة</div>');
+        renderList('listPrep', preps.length ? preps.map(o => ticketHtml(o, 'جاهز', '✅', 'جاهز للتسليم')).join('') : '<div class="empty">لا يوجد طلبات قيد التحضير</div>');
+        renderList('listReady', readys.length ? readys.map(o => ticketHtml(o, 'تم التسليم', '📦', 'تسليم الطلب')).join('') : '<div class="empty">لا توجد طلبات جاهزة</div>');
       } catch (e) {}
     }
 
-    // لا نُعيد رسم عمود عليه اختيارات محددة حاليًا (حتى لا نفقد تحديد المستخدم أثناء التحديث التلقائي)
     function renderList(listId, html) {
-      const el = document.getElementById(listId);
-      if (el.querySelector('.ord-check:checked')) return;
-      el.innerHTML = html;
+      document.getElementById(listId).innerHTML = html;
     }
-
-    window.toggleSelectAll = function (listId, checked) {
-      document.querySelectorAll('#' + listId + ' .ord-check').forEach(cb => { cb.checked = checked; });
-    };
-
-    window.bulkUpdateStatus = async function (listId, newStatus) {
-      const boxes = document.querySelectorAll('#' + listId + ' .ord-check:checked');
-      if (!boxes.length) { alert('اختر طلبًا واحدًا على الأقل أولاً'); return; }
-      const ids = Array.from(boxes).map(cb => cb.dataset.oid);
-      for (const id of ids) {
-        try { await api('update_status', { orderId: id, status: newStatus }); } catch (e) {}
-      }
-      loadOrders();
-    };
 
     async function updateStatus(orderId, status) {
       try {
