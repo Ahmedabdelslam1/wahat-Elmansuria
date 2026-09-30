@@ -67,78 +67,44 @@
     .toolbar-row { padding:0 16px 8px; margin-bottom:0; }
     .stat-chip span { font-size:10px; color:var(--muted); font-weight:700; }
 
-    .board {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      padding: 6px 14px 14px;
+    .orders-wrap { padding: 6px 14px 14px; }
+    .orders-tbl {
+      width:100%; border-collapse:collapse; background:var(--surface);
+      border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(20,20,30,0.05);
     }
-    @media (min-width: 760px) { .board { grid-template-columns: 1fr 1fr 1fr; } }
-
-    .col-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 4px; margin-bottom: 8px;
-      font-weight: 800; font-size: 14px;
-    }
-    .col-head .count {
-      background: rgba(20,20,30,0.06); padding: 2px 10px; border-radius: 20px; font-size: 12px;
-    }
-    .col.new .col-head { color: var(--new); }
-    .col.prep .col-head { color: var(--prep); }
-    .col.ready .col-head { color: var(--ready); }
-
-    .ticket {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(20,20,30,0.05);
-    }
-    .col.new .ticket { border-right: 5px solid var(--new); }
-    .col.prep .ticket { border-right: 5px solid var(--prep); }
-    .col.ready .ticket { border-right: 5px solid var(--ready); }
-
-    .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; flex-wrap:wrap; gap:6px; }
-    .ticket .oid { font-weight: 800; font-size: 13px; }
-    .ticket .time { font-size: 10px; color: var(--muted); }
-    .type-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; }
+    .orders-tbl th { background:#f4f4f4; font-size:11px; padding:9px 6px; text-align:right; white-space:nowrap; }
+    .orders-tbl td { font-size:12px; padding:8px 6px; border-top:1px solid var(--border); vertical-align:middle; }
+    .orders-tbl .oid { font-weight:800; white-space:nowrap; }
+    .orders-tbl .time { font-size:10px; color:var(--muted); white-space:nowrap; }
+    .orders-tbl .items-cell { font-weight:700; }
+    .orders-tbl .notes-cell { font-size:10.5px; color:#c77700; font-weight:700; max-width:140px; }
+    .type-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; white-space:nowrap; }
     .type-tag.dinein { background:#e8f2ff; color:#1c6fd9; }
     .type-tag.delivery { background:#fff3e0; color:#c77700; }
     .type-tag.company { background:#e7f8ec; color:#1f9e46; }
-    .ticket .tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
-    .status-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; }
+    .status-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; white-space:nowrap; }
     .status-tag.st-new { background:rgba(255,59,48,0.12); color:var(--new); }
     .status-tag.st-prep { background:rgba(224,134,0,0.12); color:var(--prep); }
     .status-tag.st-ready { background:rgba(31,158,70,0.12); color:var(--ready); }
     .status-tag.st-done { background:rgba(58,53,64,0.1); color:#3a3540; }
-    .status-icon-btn { width:30px; height:30px; border-radius:50%; border:none; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; }
-    .col.new .status-icon-btn { background:var(--prep); }
-    .col.prep .status-icon-btn { background:var(--ready); }
-    .col.ready .status-icon-btn { background:#3a3540; }
-    .ticket ul { list-style:none; margin-bottom: 12px; }
-    .ticket li {
-      display: flex; justify-content: space-between;
-      font-size: 16px; font-weight: 700;
-      padding: 7px 0; border-bottom: 1px dashed var(--border);
-    }
-    .ticket li .qty {
-      background: var(--primary); color:#fff; font-size:13px; font-weight:800;
-      min-width: 30px; text-align:center; border-radius: 8px; padding: 2px 6px;
-    }
-    .ticket .notes { font-size: 12px; color: #c77700; font-weight:700; margin-bottom: 10px; background:#fff3e0; padding:6px 10px; border-radius:8px; }
-    .ticket button {
-      width: 100%; padding: 13px; border: none; border-radius: 12px;
-      font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
-    }
-    .btn-prep { background: var(--prep); color: #fff; }
-    .btn-ready { background: var(--ready); color: #fff; }
-    .btn-done { background: #3a3540; color: #fff; }
+    .row-new { background:rgba(255,59,48,0.05); }
+    .row-prep { background:rgba(224,134,0,0.05); }
+    .row-ready { background:rgba(31,158,70,0.05); }
+    .row-new td:first-child { border-right:4px solid var(--new); }
+    .row-prep td:first-child { border-right:4px solid var(--prep); }
+    .row-ready td:first-child { border-right:4px solid var(--ready); }
+    .act-icons { display:flex; gap:4px; justify-content:flex-end; }
+    .mini-icon-btn { width:26px; height:26px; border-radius:8px; border:1px solid var(--border); background:#e7f8ec; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; padding:0; }
+    .mini-icon-btn.next-btn { border:none; color:#fff; }
+    .next-btn.ic-new { background:var(--prep); }
+    .next-btn.ic-prep { background:var(--ready); }
+    .next-btn.ic-ready { background:#3a3540; }
     .empty { text-align:center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
     .co-toggle, .stat-chip, .ticket { color: var(--text); }
   </style>
 <script src="?asset=api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="header">
@@ -179,7 +145,7 @@
         <button onclick="coChangeDay(1)">يوم تالي ▶</button>
         <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
         <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
-        <button class="toolbar-btn wa-btn" onclick="coShareImage()">📤 إرسال</button>
+        <button class="toolbar-btn wa-btn" onclick="coSharePdf()">📤 إرسال PDF</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
@@ -187,22 +153,18 @@
 
   <div class="toolbar-row">
     <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersShareImage()">📤 إرسال جدول الطلبات</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersSharePdf()">📤 إرسال جدول الطلبات PDF</button>
   </div>
 
-  <div class="board">
-    <div class="col new">
-      <div class="col-head"><span>🔴 جديد</span><span class="count" id="cNew">0</span></div>
-      <div id="listNew"></div>
-    </div>
-    <div class="col prep">
-      <div class="col-head"><span>🟠 قيد التحضير</span><span class="count" id="cPrep">0</span></div>
-      <div id="listPrep"></div>
-    </div>
-    <div class="col ready">
-      <div class="col-head"><span>🟢 جاهز للتسليم</span><span class="count" id="cReady">0</span></div>
-      <div id="listReady"></div>
-    </div>
+  <div class="orders-wrap">
+    <table class="orders-tbl">
+      <thead>
+        <tr><th>رقم الطلب</th><th>الوقت</th><th>النوع</th><th>الحالة</th><th>الأصناف</th><th>ملاحظات</th><th>أوامر</th></tr>
+      </thead>
+      <tbody id="ordersBody">
+        <tr><td colspan="7" class="empty">لا توجد طلبات حالية</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <script>
@@ -232,29 +194,32 @@
       return `<span class="status-tag ${m[0]}">${m[1]}</span>`;
     }
 
-    function ticketHtml(o, nextStatus, nextIcon, nextTitle) {
-      const items = (o.items || []).map(i =>
-        `<li><span>${esc(i.name)}</span><span class="qty">× ${esc(i.qty)}</span></li>`
-      ).join('');
+    function nextStatusOf(status) {
+      if (status === 'جديد') return ['قيد التحضير', '▶️', 'بدء التحضير', 'ic-new'];
+      if (status === 'قيد التحضير') return ['جاهز', '✅', 'جاهز للتسليم', 'ic-prep'];
+      if (status === 'جاهز') return ['تم التسليم', '📦', 'تسليم الطلب', 'ic-ready'];
+      return null;
+    }
+    window.nextStatusOf = nextStatusOf;
+
+    function orderRowHtml(o) {
       const isDelivery = o.order_type === 'دليفري';
       const isCompany = o.order_type === 'شركات';
-      return `
-        <div class="ticket">
-          <div class="top">
-            <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="time">${timeOnly(o.created_at)}</span>
-              ${nextStatus ? `<button class="status-icon-btn" title="${esc(nextTitle)}" onclick="updateStatus('${esc(o.order_id)}', '${nextStatus}')">${nextIcon}</button>` : ''}
-            </div>
-          </div>
-          <div class="tags">
-            <span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span>
-            ${statusTagHtml(o.status)}
-          </div>
-          <ul>${items}</ul>
-          ${o.notes ? '<div class="notes">📝 ' + esc(o.notes) + '</div>' : ''}
-        </div>
-      `;
+      const itemsTxt = (o.items || []).map(i => esc(i.name) + ' <b style="color:var(--primary)">×' + esc(i.qty) + '</b>').join('، ');
+      const rowCls = o.status === 'جديد' ? 'row-new' : (o.status === 'قيد التحضير' ? 'row-prep' : 'row-ready');
+      const nx = nextStatusOf(o.status);
+      return `<tr class="${rowCls}">
+        <td class="oid">${esc(o.order_id.replace('ORD-',''))}</td>
+        <td class="time">${timeOnly(o.created_at)}</td>
+        <td><span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span></td>
+        <td>${statusTagHtml(o.status)}</td>
+        <td class="items-cell">${itemsTxt}</td>
+        <td class="notes-cell">${o.notes ? '📝 ' + esc(o.notes) : '—'}</td>
+        <td><div class="act-icons">
+          ${nx ? `<button class="mini-icon-btn next-btn ${nx[3]}" title="${esc(nx[2])}" onclick="updateStatus('${esc(o.order_id)}', '${nx[0]}')">${nx[1]}</button>` : ''}
+          <button class="mini-icon-btn" title="إرسال الطلب PDF على واتساب" onclick="orderSharePdf('${esc(o.order_id)}')">📤</button>
+        </div></td>
+      </tr>`;
     }
 
     function printHtmlDoc(title, bodyHtml) {
@@ -298,33 +263,14 @@
     }
     window.coPrintTable = coPrintTable;
 
-    async function coShareImage() {
+    async function coSharePdf() {
       const groups = window.__lastCoGroups || [];
       if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
       const title = '🏢 طلبات الشركات - ' + (window.__lastCoDate || '');
-      const blob = await tableToImageBlob(title, buildCoTableHtml(groups));
-      await sendImageBlob(blob, 'company-orders-' + (window.__lastCoDate || '') + '.png');
+      const blob = await tableToPdfBlob(title, buildCoTableHtml(groups));
+      await sendPdfBlob(blob, 'company-orders-' + (window.__lastCoDate || '') + '.pdf');
     }
-    window.coShareImage = coShareImage;
-
-    function coShareWhatsapp() {
-      const groups = window.__lastCoGroups || [];
-      if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
-      const lines = ['*🏢 طلبات الشركات - ' + (window.__lastCoDate || '') + '*'];
-      groups.forEach(g => {
-        lines.push('');
-        lines.push('*' + g.company + '*');
-        g.orders.forEach(o => {
-          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
-          let line = '- ' + (o.department ? o.department + ': ' : '') + label + ' × ' + o.meals;
-          if (o.notes) line += ' (📝 ' + o.notes + ')';
-          lines.push(line);
-        });
-        lines.push('إجمالي: ' + g.totalMeals + ' وجبة');
-      });
-      window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
-    }
-    window.coShareWhatsapp = coShareWhatsapp;
+    window.coSharePdf = coSharePdf;
 
     function buildOrdersTableHtml(active) {
       let html = '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px"><thead><tr>'
@@ -349,37 +295,55 @@
     }
     window.ordersPrintTable = ordersPrintTable;
 
-    async function ordersShareImage() {
+    async function ordersSharePdf() {
       const orders = window.__lastOrders || [];
       const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
       if (!active.length) { alert('لا توجد طلبات حالية'); return; }
-      const blob = await tableToImageBlob('📋 جدول الطلبات الحالية', buildOrdersTableHtml(active));
-      await sendImageBlob(blob, 'orders-table-' + todayStr() + '.png');
+      const blob = await tableToPdfBlob('📋 جدول الطلبات الحالية', buildOrdersTableHtml(active));
+      await sendPdfBlob(blob, 'orders-table-' + todayStr() + '.pdf');
     }
-    window.ordersShareImage = ordersShareImage;
+    window.ordersSharePdf = ordersSharePdf;
 
-    // ===== تحويل جدول HTML لصورة (لإرسالها كصورة على واتساب) =====
-    async function tableToImageBlob(title, bodyHtml) {
-      if (typeof html2canvas === 'undefined') { alert('تعذر تحميل مكتبة الصور، تأكد من الاتصال بالإنترنت'); return null; }
+    // ===== تحويل جدول HTML إلى ملف PDF (لإرساله على واتساب) =====
+    async function htmlToCanvas(title, bodyHtml) {
+      if (typeof html2canvas === 'undefined') { alert('تعذر تحميل مكتبة الرسم، تأكد من الاتصال بالإنترنت'); return null; }
       const box = document.createElement('div');
       box.style.cssText = 'position:fixed;left:-9999px;top:0;width:420px;background:#fff;padding:16px;font-family:Tajawal,Tahoma,Arial,sans-serif;direction:rtl;color:#221a20;z-index:-1';
       box.innerHTML = '<h2 style="font-size:15px;margin-bottom:10px">' + title + '</h2>' + bodyHtml;
       document.body.appendChild(box);
       try {
         await new Promise(r => setTimeout(r, 60));
-        const canvas = await html2canvas(box, { scale: 2, backgroundColor: '#ffffff' });
-        return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        return await html2canvas(box, { scale: 2, backgroundColor: '#ffffff' });
       } catch (e) {
-        alert('حدث خطأ أثناء إنشاء الصورة');
+        alert('حدث خطأ أثناء إنشاء الملف');
         return null;
       } finally {
         box.remove();
       }
     }
 
-    async function sendImageBlob(blob, filename) {
+    async function tableToPdfBlob(title, bodyHtml) {
+      if (typeof window.jspdf === 'undefined') { alert('تعذر تحميل مكتبة PDF، تأكد من الاتصال بالإنترنت'); return null; }
+      const canvas = await htmlToCanvas(title, bodyHtml);
+      if (!canvas) return null;
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = pdf.internal.pageSize.getHeight();
+        const r = Math.min(pw / canvas.width, ph / canvas.height);
+        const w = canvas.width * r, h = canvas.height * r;
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pw - w) / 2, (ph - h) / 2, w, h);
+        return pdf.output('blob');
+      } catch (e) {
+        alert('حدث خطأ أثناء إنشاء ملف PDF');
+        return null;
+      }
+    }
+
+    async function sendPdfBlob(blob, filename) {
       if (!blob) return;
-      const file = new File([blob], filename, { type: 'image/png' });
+      const file = new File([blob], filename, { type: 'application/pdf' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: filename }); return; } catch (e) { /* fall through */ }
       }
@@ -387,21 +351,31 @@
       const a = document.createElement('a');
       a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      alert('تم تحميل صورة الجدول على جهازك. افتح واتساب وأرفقها يدويًا لإرسالها.');
+      alert('تم تحميل ملف PDF على جهازك. افتح واتساب وأرفقه يدويًا لإرساله.');
     }
 
-    function ordersShareWhatsapp() {
-      const orders = window.__lastOrders || [];
-      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
-      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
-      const lines = ['*📋 جدول الطلبات الحالية*'];
-      active.forEach(o => {
-        const itemsTxt = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
-        lines.push('#' + o.order_id.replace('ORD-', '') + ' | ' + (o.order_type || '') + ' | ' + o.status + ' | ' + itemsTxt);
+    async function orderSharePdf(orderId) {
+      const o = (window.__lastOrders || []).find(x => x.order_id === orderId);
+      if (!o) { alert('لم يتم العثور على الطلب'); return; }
+      const isDelivery = o.order_type === 'دليفري';
+      const isCompany = o.order_type === 'شركات';
+      const typeTxt = isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة');
+      const B = 'border:1px solid #ccc;padding:6px 8px';
+      let html = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        + `<tr><td style="${B};font-weight:800;width:110px">رقم الطلب</td><td style="${B}">${esc(o.order_id.replace('ORD-',''))}</td></tr>`
+        + `<tr><td style="${B};font-weight:800">الوقت</td><td style="${B}">${timeOnly(o.created_at)}</td></tr>`
+        + `<tr><td style="${B};font-weight:800">النوع</td><td style="${B}">${typeTxt}</td></tr>`
+        + `<tr><td style="${B};font-weight:800">الحالة</td><td style="${B}">${esc(o.status)}</td></tr>`;
+      (o.items || []).forEach(i => {
+        html += `<tr><td style="${B}">${esc(i.name)}</td><td style="${B};font-weight:800">× ${esc(i.qty)}</td></tr>`;
       });
-      window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+      html += `<tr><td style="${B};font-weight:800">الإجمالي</td><td style="${B};font-weight:800">${esc(o.total)} ج.م</td></tr>`;
+      if (o.notes) html += `<tr><td style="${B};font-weight:800">ملاحظات</td><td style="${B}">${esc(o.notes)}</td></tr>`;
+      html += '</table>';
+      const blob = await tableToPdfBlob('🧾 تفاصيل الطلب ' + o.order_id.replace('ORD-',''), html);
+      await sendPdfBlob(blob, 'order-' + o.order_id.replace('ORD-','') + '.pdf');
     }
-    window.ordersShareWhatsapp = ordersShareWhatsapp;
+    window.orderSharePdf = orderSharePdf;
 
     async function loadOrders() {
       try {
@@ -427,22 +401,16 @@
         }
         knownNewIds = ids;
 
-        document.getElementById('cNew').textContent = news.length;
-        document.getElementById('cPrep').textContent = preps.length;
-        document.getElementById('cReady').textContent = readys.length;
         document.getElementById('stNew').textContent = news.length;
         document.getElementById('stPrep').textContent = preps.length;
         document.getElementById('stReady').textContent = readys.length;
         document.getElementById('stDoneToday').textContent = doneToday.length;
 
-        renderList('listNew', news.length ? news.map(o => ticketHtml(o, 'قيد التحضير', '▶️', 'بدء التحضير')).join('') : '<div class="empty">لا توجد طلبات جديدة</div>');
-        renderList('listPrep', preps.length ? preps.map(o => ticketHtml(o, 'جاهز', '✅', 'جاهز للتسليم')).join('') : '<div class="empty">لا يوجد طلبات قيد التحضير</div>');
-        renderList('listReady', readys.length ? readys.map(o => ticketHtml(o, 'تم التسليم', '📦', 'تسليم الطلب')).join('') : '<div class="empty">لا توجد طلبات جاهزة</div>');
+        const active = news.concat(preps).concat(readys);
+        document.getElementById('ordersBody').innerHTML = active.length
+          ? active.map(o => orderRowHtml(o)).join('')
+          : '<tr><td colspan="7" class="empty">لا توجد طلبات حالية</td></tr>';
       } catch (e) {}
-    }
-
-    function renderList(listId, html) {
-      document.getElementById(listId).innerHTML = html;
     }
 
     async function updateStatus(orderId, status) {
