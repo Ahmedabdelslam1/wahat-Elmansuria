@@ -57,12 +57,14 @@
     .co-table .co-dept-cell { color:#7a707a; font-weight:700; white-space:nowrap; }
     .co-table .co-meal-cell { font-weight:700; }
     .co-table .co-count-cell { font-weight:800; color:#1f9e46; text-align:center; white-space:nowrap; }
-    .co-line-notes { font-size:10.5px; color:#c77700; font-weight:700; margin-top:2px; }
+    .co-table .co-notes-cell { font-size:10.5px; color:#c77700; font-weight:700; }
     .co-company-card .co-sum { margin-top:8px; padding-top:8px; border-top:2px solid var(--border); font-size:12px; font-weight:800; display:flex; justify-content:space-between; }
-    .co-date-nav { display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-    .co-date-nav button { border:1px solid var(--border); background:#fff; color:var(--text); font-family:inherit; font-weight:700; font-size:11px; padding:6px 9px; border-radius:8px; cursor:pointer; }
+    .co-date-nav, .toolbar-row { display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .co-date-nav button, .toolbar-btn { border:1px solid var(--border); background:#fff; color:var(--text); font-family:inherit; font-weight:700; font-size:11px; padding:6px 9px; border-radius:8px; cursor:pointer; }
     .co-date-nav input[type=date] { border:1px solid var(--border); background:#fff; color:var(--text); font-family:inherit; font-size:11.5px; padding:5px 7px; border-radius:8px; }
     .co-date-nav #coTodayBtn { background:#fff3e0; color:#c77700; border-color:#fff3e0; }
+    .toolbar-btn.wa-btn { background:#e7f8ec; color:#1f9e46; border-color:#e7f8ec; }
+    .toolbar-row { padding:0 16px 8px; margin-bottom:0; }
     .stat-chip span { font-size:10px; color:var(--muted); font-weight:700; }
 
     .board {
@@ -104,6 +106,12 @@
     .type-tag.dinein { background:#e8f2ff; color:#1c6fd9; }
     .type-tag.delivery { background:#fff3e0; color:#c77700; }
     .type-tag.company { background:#e7f8ec; color:#1f9e46; }
+    .ticket .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+    .status-tag { font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:16px; }
+    .status-tag.st-new { background:rgba(255,59,48,0.12); color:var(--new); }
+    .status-tag.st-prep { background:rgba(224,134,0,0.12); color:var(--prep); }
+    .status-tag.st-ready { background:rgba(31,158,70,0.12); color:var(--ready); }
+    .status-tag.st-done { background:rgba(58,53,64,0.1); color:#3a3540; }
     .ticket ul { list-style:none; margin-bottom: 12px; }
     .ticket li {
       display: flex; justify-content: space-between;
@@ -165,9 +173,16 @@
         <input type="date" id="coDateInput" onchange="coDateChanged()">
         <button onclick="coChangeDay(1)">يوم تالي ▶</button>
         <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
+        <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
+        <button class="toolbar-btn wa-btn" onclick="coShareWhatsapp()">📤 إرسال</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
+  </div>
+
+  <div class="toolbar-row">
+    <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
+    <button class="toolbar-btn wa-btn" onclick="ordersShareWhatsapp()">📤 إرسال جدول الطلبات</button>
   </div>
 
   <div class="board">
@@ -201,6 +216,17 @@
       return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
     }
 
+    function statusTagHtml(status) {
+      const map = {
+        'جديد': ['st-new', '🔴 جديد'],
+        'قيد التحضير': ['st-prep', '🟠 قيد التحضير'],
+        'جاهز': ['st-ready', '🟢 جاهز'],
+        'تم التسليم': ['st-done', '⚪ تم التسليم']
+      };
+      const m = map[status] || ['st-new', esc(status || '')];
+      return `<span class="status-tag ${m[0]}">${m[1]}</span>`;
+    }
+
     function ticketHtml(o, nextLabel, nextStatus, btnClass) {
       const items = (o.items || []).map(i =>
         `<li><span>${esc(i.name)}</span><span class="qty">× ${esc(i.qty)}</span></li>`
@@ -211,8 +237,11 @@
         <div class="ticket">
           <div class="top">
             <span class="oid">${esc(o.order_id.replace('ORD-',''))}</span>
-            <span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span>
             <span class="time">${timeOnly(o.created_at)}</span>
+          </div>
+          <div class="tags">
+            <span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span>
+            ${statusTagHtml(o.status)}
           </div>
           <ul>${items}</ul>
           ${o.notes ? '<div class="notes">📝 ' + esc(o.notes) + '</div>' : ''}
@@ -220,6 +249,89 @@
         </div>
       `;
     }
+
+    function printHtmlDoc(title, bodyHtml) {
+      const w = window.open('', '_blank');
+      if (!w) { alert('يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
+      w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${title}</title>
+        <style>
+          body{font-family:Tahoma,Arial,sans-serif;padding:16px;color:#221a20}
+          h2{font-size:16px;margin-bottom:10px}
+          h3{font-size:13px;margin:14px 0 6px;color:#1f9e46}
+          table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px}
+          th,td{border:1px solid #ccc;padding:6px 8px;text-align:right}
+          th{background:#f4f4f4}
+          .sum{font-weight:800;margin-top:4px}
+          .pbtn{margin-top:14px;padding:10px 18px;border:none;border-radius:8px;background:#ff3b30;color:#fff;font-weight:800;cursor:pointer;font-size:13px}
+          @media print { .pbtn{display:none} }
+        </style></head><body>
+        <h2>${title}</h2>${bodyHtml}
+        <button class="pbtn" onclick="window.print()">🖨️ طباعة</button>
+        </body></html>`);
+      w.document.close();
+    }
+
+    function coPrintTable() {
+      const groups = window.__lastCoGroups || [];
+      if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
+      let html = '';
+      groups.forEach(g => {
+        html += `<h3>🏢 ${esc(g.company)}</h3><table><thead><tr><th>القسم</th><th>الوجبة</th><th>العدد</th><th>ملاحظات</th></tr></thead><tbody>`;
+        g.orders.forEach(o => {
+          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+          html += `<tr><td>${o.department ? esc(o.department) : '—'}</td><td>${esc(label)}</td><td>${o.meals}</td><td>${o.notes ? esc(o.notes) : '—'}</td></tr>`;
+        });
+        html += `</tbody></table><div class="sum">إجمالي عدد الوجبات: ${g.totalMeals} وجبة</div>`;
+      });
+      printHtmlDoc('طلبات الشركات - ' + (window.__lastCoDate || ''), html);
+    }
+    window.coPrintTable = coPrintTable;
+
+    function coShareWhatsapp() {
+      const groups = window.__lastCoGroups || [];
+      if (!groups.length) { alert('لا توجد بيانات لهذا اليوم'); return; }
+      const lines = ['*🏢 طلبات الشركات - ' + (window.__lastCoDate || '') + '*'];
+      groups.forEach(g => {
+        lines.push('');
+        lines.push('*' + g.company + '*');
+        g.orders.forEach(o => {
+          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+          let line = '- ' + (o.department ? o.department + ': ' : '') + label + ' × ' + o.meals;
+          if (o.notes) line += ' (📝 ' + o.notes + ')';
+          lines.push(line);
+        });
+        lines.push('إجمالي: ' + g.totalMeals + ' وجبة');
+      });
+      window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    }
+    window.coShareWhatsapp = coShareWhatsapp;
+
+    function ordersPrintTable() {
+      const orders = window.__lastOrders || [];
+      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
+      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
+      let html = '<table><thead><tr><th>رقم الطلب</th><th>الوقت</th><th>النوع</th><th>الحالة</th><th>الأصناف</th></tr></thead><tbody>';
+      active.forEach(o => {
+        const itemsTxt = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
+        html += `<tr><td>${esc(o.order_id.replace('ORD-',''))}</td><td>${timeOnly(o.created_at)}</td><td>${esc(o.order_type || '')}</td><td>${esc(o.status)}</td><td>${esc(itemsTxt)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      printHtmlDoc('جدول الطلبات الحالية', html);
+    }
+    window.ordersPrintTable = ordersPrintTable;
+
+    function ordersShareWhatsapp() {
+      const orders = window.__lastOrders || [];
+      const active = orders.filter(o => ['جديد', 'قيد التحضير', 'جاهز'].includes(o.status));
+      if (!active.length) { alert('لا توجد طلبات حالية'); return; }
+      const lines = ['*📋 جدول الطلبات الحالية*'];
+      active.forEach(o => {
+        const itemsTxt = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
+        lines.push('#' + o.order_id.replace('ORD-', '') + ' | ' + (o.order_type || '') + ' | ' + o.status + ' | ' + itemsTxt);
+      });
+      window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    }
+    window.ordersShareWhatsapp = ordersShareWhatsapp;
 
     async function loadOrders() {
       try {
@@ -229,6 +341,7 @@
           return;
         }
         const orders = res.orders || [];
+        window.__lastOrders = orders;
         const news = orders.filter(o => o.status === 'جديد');
         const preps = orders.filter(o => o.status === 'قيد التحضير');
         const readys = orders.filter(o => o.status === 'جاهز');
@@ -336,6 +449,8 @@
         const active = res.groups
           .map(g => ({ ...g, orders: g.orders.filter(o => o.status !== 'ملغي') }))
           .filter(g => g.orders.length);
+        window.__lastCoGroups = active;
+        window.__lastCoDate = res.date || coSelectedDate;
         // إنذار عند وصول طلب شركات جديد (فقط عند عرض اليوم الحالي)
         if (coSelectedDate === coTodayStr()) {
           const ids = new Set();
@@ -359,14 +474,15 @@
           <div class="co-company-card">
             <div class="co-cname">🏢 ${esc(g.company)}</div>
             <table class="co-table">
-              <thead><tr><th>القسم</th><th>الوجبة</th><th>العدد</th></tr></thead>
+              <thead><tr><th>القسم</th><th>الوجبة</th><th>العدد</th><th>ملاحظات</th></tr></thead>
               <tbody>
                 ${g.orders.map(o => {
                   const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
                   return `<tr>
                     <td class="co-dept-cell">${o.department ? esc(o.department) : '—'}</td>
-                    <td class="co-meal-cell">${esc(label)}${o.notes ? `<div class="co-line-notes">📝 ${esc(o.notes)}</div>` : ''}</td>
+                    <td class="co-meal-cell">${esc(label)}</td>
                     <td class="co-count-cell">${o.meals}</td>
+                    <td class="co-notes-cell">${o.notes ? esc(o.notes) : '—'}</td>
                   </tr>`;
                 }).join('')}
               </tbody>
