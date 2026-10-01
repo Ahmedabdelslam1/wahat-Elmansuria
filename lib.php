@@ -310,6 +310,7 @@ function init_db(PDO $db) {
     }
 
     $defaults = [
+        'authSecret' => bin2hex(random_bytes(32)),
         'restaurantName' => 'واحة المنصورية',
         'phone' => '01153431728',
         'address' => 'أول مدخل المنصورية بجوار مسجد عبدالرحيم زيدان',
@@ -521,8 +522,9 @@ function boot_session() {
         session_save_path($sessDir);
     }
 
-    // عمر جلسة طويل (12 ساعة) — يوم عمل كامل على شاشة الكاشير/المطبخ بدون قطع
-    $lifetime = 12 * 3600;
+    // عمر جلسة طويل (30 يوم) — بالإضافة لكوكي دخول دائم (انظر current_user) حتى لا يخرج
+    // المستخدم تلقائيًا أبدًا؛ الخروج فقط عند الضغط على زر "خروج"
+    $lifetime = 30 * 24 * 3600;
     ini_set('session.gc_maxlifetime', (string)$lifetime);
     session_set_cookie_params([
         'lifetime' => $lifetime,
@@ -534,8 +536,52 @@ function boot_session() {
     if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
 }
 
+/** مفتاح توقيع ثابت لكل تنصيب (يُولَّد مرة واحدة ويُخزَّن في settings) لتوقيع كوكي الدخول الدائم */
+function auth_secret() {
+    static $secret = null;
+    if ($secret === null) $secret = get_setting('authSecret', '');
+    return $secret;
+}
+
+const AUTH_COOKIE = 'wahat_auth';
+
+/** تفعيل كوكي دخول دائم (مستقل عن ملف جلسة PHP) — لا يسجل خروج المستخدم أبدًا تلقائيًا */
+function set_persistent_login($userId) {
+    $secret = auth_secret();
+    if ($secret === '') return;
+    $expires = time() + 180 * 24 * 3600; // 180 يوم
+    $payload = $userId . '.' . $expires;
+    $sig = hash_hmac('sha256', $payload, $secret);
+    setcookie(AUTH_COOKIE, $payload . '.' . $sig, [
+        'expires' => $expires, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax',
+    ]);
+}
+
+function clear_persistent_login() {
+    setcookie(AUTH_COOKIE, '', ['expires' => time() - 42000, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+}
+
+/** قراءة كوكي الدخول الدائم والتحقق من التوقيع — يُستخدم عند ضياع جلسة PHP (شائع على الاستضافات المجانية) */
+function verify_persistent_login() {
+    $secret = auth_secret();
+    $cookie = (string)($_COOKIE[AUTH_COOKIE] ?? '');
+    if ($secret === '' || $cookie === '') return 0;
+    $parts = explode('.', $cookie);
+    if (count($parts) !== 3) return 0;
+    [$userId, $expires, $sig] = $parts;
+    if ((int)$expires < time()) return 0;
+    $expected = hash_hmac('sha256', $userId . '.' . $expires, $secret);
+    if (!hash_equals($expected, $sig)) return 0;
+    return (int)$userId;
+}
+
 function current_user() {
-    if (empty($_SESSION['uid'])) return null;
+    if (empty($_SESSION['uid'])) {
+        // الجلسة ضاعت (مثلاً مجلد الجلسات انمسح على الاستضافة) — نحاول استرجاع الدخول من الكوكي الدائم
+        $uid = verify_persistent_login();
+        if (!$uid) return null;
+        $_SESSION['uid'] = $uid;
+    }
     $db = db();
     $st = $db->prepare('SELECT id, username, name, role, active, permissions FROM users WHERE id = ?');
     $st->execute([(int)$_SESSION['uid']]);
@@ -572,6 +618,7 @@ function api_login($data) {
     }
     session_regenerate_id(true);
     $_SESSION['uid'] = (int)$u['id'];
+    set_persistent_login((int)$u['id']);
     $pages = user_allowed_pages($u);
     $redirect = 'menu';
     if ($u['role'] === 'admin') $redirect = 'admin';
@@ -591,6 +638,7 @@ function api_logout() {
         setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
     session_destroy();
+    clear_persistent_login();
     json_out(['success' => true]);
 }
 

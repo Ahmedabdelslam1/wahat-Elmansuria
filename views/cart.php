@@ -122,7 +122,8 @@
     .torder-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
     .torder-id { font-weight: 800; font-size: 12.5px; direction: ltr; }
     .torder-date { color: var(--muted); font-size: 11px; }
-    .tstatus { font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 16px; }
+    .tstatus { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 12px; }
+    .torder { border-right: 4px solid var(--primary); }
     .tstatus.new { background: #ffebe9; color: #ff3b30; }
     .tstatus.preparing { background: #fff3e0; color: #ef6c00; }
     .tstatus.ready { background: #e7f8ec; color: #2e7d32; }
@@ -135,10 +136,12 @@
     .track-search input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 12.5px; }
     .track-search button { border: none; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); color: #fff; border-radius: 12px; padding: 10px 16px; font-family: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; }
     .track-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 14px; }
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <div class="topbar">
     <a class="icon-btn" href="?page=menu" title="رجوع للمنيو">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
@@ -312,7 +315,7 @@
         });
         btn.disabled = false;
         if (res.success) {
-          // الاحتفاظ بالطلب في السلة + تسجيله في قائمة طلباتى للمتابعة
+          // تسجيل الطلب في قائمة "متابعة طلباتي" ثم قفل السلة (تفريغها) فالطلب خلص واتسجل
           const myOrders = JSON.parse(localStorage.getItem('wahat_my_orders') || '[]');
           myOrders.unshift({
             orderId: res.orderId || '',
@@ -322,6 +325,9 @@
             status: 'جديد'
           });
           localStorage.setItem('wahat_my_orders', JSON.stringify(myOrders));
+          localStorage.removeItem('wahat_cart');
+          cart = [];
+          render();
           renderMyOrders();
           showOrderDone(res);
         } else {
@@ -369,8 +375,14 @@
         list.innerHTML = '<div class="track-empty">' + (trackFilter === 'all' ? 'لا توجد طلبات محفوظة على هذا الجهاز — اطلب وسيظهر هنا مع حالته' : 'لا توجد طلبات في هذا النطاق') + '</div>';
         return;
       }
+      const palette = ['#ff3b30', '#ff9500', '#34c759', '#007aff', '#af52de', '#00c7be', '#d32f2f', '#5856d6'];
+      function colorOf(id) {
+        let h = 0;
+        for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+        return palette[h % palette.length];
+      }
       list.innerHTML = orders.map((o, idx) =>
-        '<div class="torder">'
+        '<div class="torder" style="border-right-color:' + colorOf(o.orderId || String(idx)) + '">'
         + '<div class="torder-head">'
         + '<span class="torder-id">' + esc(o.orderId) + '</span>'
         + '<span class="tstatus ' + statusClassOf(o.status) + '" id="tst-' + idx + '">' + esc(o.status) + '</span>'
@@ -443,6 +455,18 @@
         + '</div>';
       document.body.appendChild(d);
     }
+  </script>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
   </script>
 </body>
 </html>

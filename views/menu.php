@@ -208,10 +208,12 @@
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 11px; margin-left: 8px;
     }
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <div class="topbar">
     <a class="icon-btn" href="?page=home" title="الرئيسية">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -466,6 +468,18 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
     }
+  </script>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
   </script>
 </body>
 </html>

@@ -173,10 +173,12 @@
     .guest { margin-top: 20px; font-size: 13px; color: #d8d8e2; }
     .guest a { color: var(--gold); text-decoration: none; font-weight: 800; }
     .roles-hint { margin-top: 18px; font-size: 10.5px; color: #9a9aad; line-height: 1.7; }
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <span class="float-food ff1 f1">🍖</span>
   <span class="float-food ff2 f2">🍚</span>
   <span class="float-food ff3 f3">🥙</span>
@@ -238,6 +240,18 @@
     const enterLogin = e => { if (e.key === 'Enter') doLogin(); };
     document.getElementById('password').addEventListener('keypress', enterLogin);
     document.getElementById('username').addEventListener('keypress', enterLogin);
+  </script>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
   </script>
 </body>
 </html>

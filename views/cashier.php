@@ -133,10 +133,12 @@
     .mcard .p { font-size: 11.5px; font-weight: 800; color: var(--primary); }
     .mcard .c { font-size: 8.5px; color: var(--muted); }
 
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <div class="header">
     <div class="header-brand">
       <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
@@ -613,5 +615,17 @@
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
   <?php include __DIR__ . '/_wa.php'; ?>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+  </script>
 </body>
 </html>

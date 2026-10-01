@@ -105,12 +105,14 @@
     .next-btn.ic-ready { background:#3a3540; }
     .empty { text-align:center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
     .co-toggle, .stat-chip, .ticket { color: var(--text); }
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <div class="header">
     <div class="header-brand">
       <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
@@ -260,7 +262,7 @@
           <button class="pbtn pr" onclick="window.print()">🖨️ طباعة</button>
           ${extraBtns || ''}
         </div>
-        </body></html>`);
+</body></html>`);
       w.document.close();
     }
 
@@ -579,5 +581,17 @@
     setInterval(function () { if (coSelectedDate === coTodayStr()) loadCompanyOrders(); }, 8000);
   </script>
   <?php include __DIR__ . '/_alerts.php'; ?>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+  </script>
 </body>
 </html>

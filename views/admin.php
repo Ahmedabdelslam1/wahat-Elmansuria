@@ -91,10 +91,12 @@
     .act-add { background:#e7f8ec; color:#34c759; }
     .act-cancel { background:#fff3e0; color:#ef6c00; }
     .act-del { background:#ffebe9; color:#ff3b30; }
+      .live-clock-bar { text-align:center; font-size:10px; color:var(--muted); padding:4px 0; background:var(--surface); border-bottom:1px solid var(--border); font-weight:700; letter-spacing:.2px; position:sticky; top:0; z-index:60; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
 <body>
+  <div class="live-clock-bar" id="liveClockBar">—</div>
   <div class="header">
     <div class="header-brand">
       <img class="header-logo" src="assets/icons/icon-512.png" alt="شعار <?= e(APP_NAME) ?>">
@@ -841,5 +843,17 @@
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
   <?php include __DIR__ . '/_wa.php'; ?>
+  <script>
+    function updateLiveClock() {
+      var el = document.getElementById('liveClockBar');
+      if (!el) return;
+      var now = new Date();
+      var d = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      var t = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      el.textContent = d + ' — ' + t;
+    }
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+  </script>
 </body>
 </html>
