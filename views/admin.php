@@ -651,7 +651,7 @@
             <strong>${o.status} · ${o.total} ج.م</strong>
             ${canEdit ? '<button class="act-btn act-edit" onclick="openOrderEdit(window.adminOrdersCache[\'' + esc(o.order_id) + '\'])">✏️ تعديل</button>' : ''}
             ${canEdit ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) adminCancelOrder(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
-            <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) adminDeleteOrder(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
+            ${'<button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) adminDeleteOrder(\'' + esc(o.order_id) + '\')">🗑 حذف</button>'}
             <button class="act-btn act-add" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️</button>
             ${window.waRestLink ? `<a class="act-btn" style="background:#128C7E;color:#fff;text-decoration:none" href="${waRestLink(o)}" target="_blank">📤 واتس</a>` : ''}
             ${(window.waClientLink && o.phone) ? `<a class="act-btn" style="background:#e5f0ff;color:#007aff;text-decoration:none" href="${waClientLink(o)}" target="_blank">📲</a>` : ''}

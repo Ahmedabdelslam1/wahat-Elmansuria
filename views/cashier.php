@@ -572,7 +572,7 @@
               ${canEdit ? '<button class="act-btn act-add" onclick="openOrderEditById(\'' + esc(o.order_id) + '\')">➕ إضافة</button>' : ''}
               ${(canEdit && !isCompany) ? '<button class="act-btn act-cancel" onclick="if (confirm(\'إلغاء الطلب؟\')) cancelOrderDirect(\'' + esc(o.order_id) + '\')">✖ إلغاء</button>' : ''}
               ${(canEdit && isCompany) ? '<button class="act-btn act-cancel" title="إلغاء بنود الشركة من تبويب الشركات" onclick="var t=document.querySelectorAll(\'.tab\')[3]; if(t) showTab(\'companies\', t)">✖ إلغاء (من الشركات)</button>' : ''}
-              <button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) deleteOrderDirect(\'' + esc(o.order_id) + '\')">🗑 حذف</button>
+              ${'<button class="act-btn act-del" onclick="if (confirm(\'حذف الطلب نهائيًا؟\')) deleteOrderDirect(\'' + esc(o.order_id) + '\')">🗑 حذف</button>'}
               <button class="btn-prep" style="background:#e5f0ff;color:#007aff" onclick="window.open(\'?page=invoice&id=${encodeURIComponent(o.order_id)}\', \'_blank\')">🖨️ فاتورة</button>
               ${window.waRestLink ? `<a class="act-btn" style="background:#128C7E;color:#fff;text-decoration:none;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:700" href="${waRestLink(o)}" target="_blank">📤 واتس</a>` : ''}
               ${(window.waClientLink && o.phone) ? `<a class="act-btn" style="background:#e5f0ff;color:#007aff;text-decoration:none;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:700" href="${waClientLink(o)}" target="_blank">📲 العميل</a>` : ''}
