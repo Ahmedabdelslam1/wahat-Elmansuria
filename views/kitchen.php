@@ -74,8 +74,8 @@
     }
     .orders-tbl th { background:#f4f4f4; font-size:11px; padding:9px 6px; text-align:right; white-space:nowrap; }
     .orders-tbl td { font-size:12px; padding:8px 6px; border-top:1px solid var(--border); vertical-align:middle; }
-    .orders-tbl .oid { font-weight:800; white-space:nowrap; }
-    .orders-tbl .time { font-size:10px; color:var(--muted); white-space:nowrap; }
+    .orders-tbl .qty-cell { font-weight:800; color:var(--primary); white-space:nowrap; }
+    .orders-tbl .phone-cell { white-space:nowrap; direction:ltr; text-align:right; font-size:11px; }
     .orders-tbl .items-cell { font-weight:700; }
     .orders-tbl .notes-cell { font-size:10.5px; color:#c77700; font-weight:700; max-width:140px; }
     .type-tag { font-size:9px; font-weight:800; padding:2px 7px; border-radius:12px; white-space:nowrap; }
@@ -135,6 +135,7 @@
       <h3 id="coTitle">🏢 طلبات الشركات اليوم
         <span class="co-badge" id="coCount">0 شركة</span>
         <span class="co-badge" id="coMealsBadge">0 وجبة</span>
+        <span class="co-badge" id="coPkgBadge" style="background:#e8f2ff;color:#1c6fd9"></span>
       </h3>
       <div class="co-toggle" id="coToggleIcon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -161,7 +162,7 @@
   <div class="orders-wrap">
     <table class="orders-tbl">
       <thead>
-        <tr><th>رقم الطلب</th><th>الوقت</th><th>النوع</th><th>الحالة</th><th>الأصناف</th><th>ملاحظات</th><th>أوامر</th></tr>
+        <tr><th>الطلب</th><th>العدد</th><th>النوع</th><th>الحالة</th><th>رقم الهاتف</th><th>ملاحظات</th><th>أوامر</th></tr>
       </thead>
       <tbody id="ordersBody">
         <tr><td colspan="7" class="empty">لا توجد طلبات حالية</td></tr>
@@ -210,12 +211,13 @@
       const itemsTxt = (o.items || []).map(i => esc(i.name) + ' <b style="color:var(--primary)">×' + esc(i.qty) + '</b>').join('، ');
       const rowCls = o.status === 'جديد' ? 'row-new' : (o.status === 'قيد التحضير' ? 'row-prep' : (o.status === 'جاهز' ? 'row-ready' : 'row-done'));
       const nx = nextStatusOf(o.status);
+      const totalQty = (o.items || []).reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
       return `<tr class="${rowCls}">
-        <td class="oid">${esc(o.order_id.replace('ORD-',''))}</td>
-        <td class="time">${timeOnly(o.created_at)}</td>
+        <td class="items-cell">${itemsTxt}</td>
+        <td class="qty-cell">${totalQty}</td>
         <td><span class="type-tag ${isCompany ? 'company' : (isDelivery ? 'delivery' : 'dinein')}">${isCompany ? '🏢 شركات' : (isDelivery ? '🛵 دليفري' : '🍽️ صالة')}</span></td>
         <td>${statusTagHtml(o.status)}</td>
-        <td class="items-cell">${itemsTxt}</td>
+        <td class="phone-cell">${o.phone ? esc(o.phone) : '—'}</td>
         <td class="notes-cell">${o.notes ? '📝 ' + esc(o.notes) : '—'}</td>
         <td><div class="act-icons">
           ${nx ? `<button class="mini-icon-btn next-btn ${nx[3]}" title="${esc(nx[2])}" onclick="updateStatus('${esc(o.order_id)}', '${nx[0]}')">${nx[1]}</button>` : `<button class="mini-icon-btn" title="إعادة فتح الطلب" onclick="updateStatus('${esc(o.order_id)}', 'قيد التحضير')">↩️</button>`}
@@ -519,6 +521,12 @@
         const totalMealsAll = active.reduce((s, g) => s + g.totalMeals, 0);
         document.getElementById('coCount').textContent = active.length + ' شركة';
         document.getElementById('coMealsBadge').textContent = totalMealsAll + ' وجبة';
+        const pkgTotals = {};
+        active.forEach(g => g.orders.forEach(o => {
+          const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+          pkgTotals[label] = (pkgTotals[label] || 0) + (Number(o.meals) || 0);
+        }));
+        document.getElementById('coPkgBadge').textContent = Object.keys(pkgTotals).map(k => k + ': ' + pkgTotals[k]).join(' · ') || '';
         if (!active.length) {
           box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات في هذا اليوم</div>';
           return;
