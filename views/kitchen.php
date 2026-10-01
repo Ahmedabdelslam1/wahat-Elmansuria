@@ -242,10 +242,12 @@
     function printHtmlDoc(title, bodyHtml, extraBtns) {
       const w = window.open('', '_blank');
       if (!w) { alert('يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
+      const logoUrl = new URL('assets/icons/icon-512.png', window.location.href).href;
       w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${title}</title>
         <style>
           body{font-family:Tahoma,Arial,sans-serif;padding:16px;color:#221a20}
-          h2{font-size:16px;margin-bottom:10px}
+          .print-logo{display:block;margin:0 auto 8px;height:52px}
+          h2{font-size:16px;margin-bottom:10px;text-align:center}
           h3{font-size:13px;margin:14px 0 6px;color:#1f9e46}
           table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px}
           th,td{border:1px solid #ccc;padding:6px 8px;text-align:right}
@@ -257,6 +259,7 @@
           .btns{display:flex;gap:8px;flex-wrap:wrap}
           @media print { .btns{display:none} }
         </style></head><body>
+        <img class="print-logo" src="${logoUrl}" alt="شعار">
         <h2>${title}</h2>${bodyHtml}
         <div class="btns">
           <button class="pbtn pr" onclick="window.print()">🖨️ طباعة</button>
