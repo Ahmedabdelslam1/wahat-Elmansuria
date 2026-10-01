@@ -42,7 +42,9 @@
     .co-section { margin:14px 16px 4px; }
     .co-section-head { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; gap:8px; }
     .co-section-head h3 { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .co-badge { background:#fff3e0; color:#c77700; border-radius:20px; padding:3px 11px; font-size:11.5px; font-weight:800; }
+    .co-badge { background:#fff3e0; color:#c77700; border-radius:20px; padding:4px 12px; font-size:14px; font-weight:800; }
+    .co-badge .pkg-num { color:#1f9e46; font-size:16px; }
+    .page-date-nav { margin:12px 16px 0; padding:0; }
     .co-toggle { width:26px; height:26px; border-radius:50%; border:1px solid var(--border); background:#fff3e0; color:#c77700; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; transition:transform .2s, box-shadow .2s; box-shadow:0 0 8px -1px rgba(255,149,0,0.4); }
     .co-section.expanded .co-toggle { transform:rotate(180deg); box-shadow:0 0 12px 0 rgba(255,149,0,0.7); }
     .co-body { display:none; margin-top:10px; }
@@ -127,7 +129,14 @@
     <div class="stat-chip"><b id="stNew" style="color:var(--new)">0</b><span>جديد</span></div>
     <div class="stat-chip"><b id="stPrep" style="color:var(--prep)">0</b><span>قيد التحضير</span></div>
     <div class="stat-chip"><b id="stReady" style="color:var(--ready)">0</b><span>جاهز</span></div>
-    <div class="stat-chip"><b id="stDoneToday" style="color:#5ab0ff">0</b><span>تم تسليمه اليوم</span></div>
+    <div class="stat-chip"><b id="stDoneToday" style="color:#5ab0ff">0</b><span id="stDoneLabel">تم تسليمه اليوم</span></div>
+  </div>
+
+  <div class="co-date-nav page-date-nav">
+    <button onclick="coChangeDay(-1)">◀ يوم سابق</button>
+    <input type="date" id="coDateInput" onchange="coDateChanged()">
+    <button onclick="coChangeDay(1)">يوم تالي ▶</button>
+    <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
   </div>
 
   <div class="co-section" id="coSection" style="border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface)">
@@ -143,12 +152,7 @@
     </div>
     <div class="co-body" id="coBody">
       <div class="co-date-nav" onclick="event.stopPropagation()">
-        <button onclick="coChangeDay(-1)">◀ يوم سابق</button>
-        <input type="date" id="coDateInput" onchange="coDateChanged()">
-        <button onclick="coChangeDay(1)">يوم تالي ▶</button>
-        <button id="coTodayBtn" onclick="coGoToday()">اليوم</button>
-        <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة</button>
-        <button class="toolbar-btn wa-btn" onclick="coSendPdf('share')">📤 إرسال PDF</button>
+        <button class="toolbar-btn" onclick="coPrintTable()">🖨️ طباعة طلبات الشركات</button>
       </div>
       <div class="co-companies" id="coCompanies"><div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات اليوم</div></div>
     </div>
@@ -156,7 +160,6 @@
 
   <div class="toolbar-row">
     <button class="toolbar-btn" onclick="ordersPrintTable()">🖨️ طباعة جدول الطلبات</button>
-    <button class="toolbar-btn wa-btn" onclick="ordersSendPdf('share')">📤 إرسال جدول الطلبات PDF</button>
   </div>
 
   <div class="orders-wrap">
@@ -172,6 +175,14 @@
 
   <script>
     let knownNewIds = new Set();
+    function deptColor(name) {
+      const palette = ['#1c6fd9', '#c77700', '#8e44ad', '#0e9f9f', '#d6336c', '#2f855a', '#b06a00', '#5f3dc4'];
+      let h = 0;
+      for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) % 997;
+      return palette[h % palette.length];
+    }
+    window.deptColor = deptColor;
+
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -259,7 +270,7 @@
         html += `<h3 style="font-size:13px;margin:14px 0 6px;color:#1f9e46">🏢 ${esc(g.company)}</h3><table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px"><thead><tr><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">القسم</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">الوجبة</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">العدد</th><th style="border:1px solid #ccc;padding:6px 8px;background:#f4f4f4;text-align:right">ملاحظات</th></tr></thead><tbody>`;
         g.orders.forEach(o => {
           const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
-          html += `<tr><td style="border:1px solid #ccc;padding:6px 8px">${o.department ? esc(o.department) : '—'}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(label)}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.meals}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.notes ? esc(o.notes) : '—'}</td></tr>`;
+          html += `<tr><td style="border:1px solid #ccc;padding:6px 8px${o.department ? ';color:' + deptColor(o.department) + ';font-weight:800' : ''}">${o.department ? esc(o.department) : '—'}</td><td style="border:1px solid #ccc;padding:6px 8px">${esc(label)}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.meals}</td><td style="border:1px solid #ccc;padding:6px 8px">${o.notes ? esc(o.notes) : '—'}</td></tr>`;
         });
         html += `</tbody></table><div style="font-weight:800;margin-top:4px">إجمالي عدد الوجبات: ${g.totalMeals} وجبة</div>`;
       });
@@ -299,25 +310,25 @@
       return html;
     }
 
-    function todayShownOrders() {
-      const today = todayStr();
-      return (window.__lastOrders || []).filter(o => (o.created_at || '').slice(0, 10) === today);
+    function selShownOrders() {
+      const selDate = (typeof coSelectedDate !== 'undefined' && coSelectedDate) || todayStr();
+      return (window.__lastOrders || []).filter(o => (o.created_at || '').slice(0, 10) === selDate);
     }
 
     function ordersPrintTable() {
-      const shown = todayShownOrders();
-      if (!shown.length) { alert('لا توجد طلبات اليوم'); return; }
+      const shown = selShownOrders();
+      if (!shown.length) { alert('لا توجد طلبات في هذا اليوم'); return; }
       const btns = '<button class="pbtn pdf" onclick="window.opener.ordersSendPdf(\'share\')">📤 إرسال PDF واتساب</button>'
         + '<button class="pbtn pdf" onclick="window.opener.ordersSendPdf(\'download\')">⬇️ تنزيل PDF</button>';
-      printHtmlDoc('📋 جدول طلبات اليوم ' + todayStr(), buildOrdersTableHtml(shown), btns);
+      printHtmlDoc('📋 جدول الطلبات — ' + coSelectedDate, buildOrdersTableHtml(shown), btns);
     }
     window.ordersPrintTable = ordersPrintTable;
 
     async function ordersSendPdf(mode) {
-      const shown = todayShownOrders();
-      if (!shown.length) { alert('لا توجد طلبات اليوم'); return; }
-      const blob = await tableToPdfBlob('📋 جدول طلبات اليوم ' + todayStr(), buildOrdersTableHtml(shown));
-      await sendPdfBlob(blob, 'orders-table-' + todayStr() + '.pdf', mode === 'download');
+      const shown = selShownOrders();
+      if (!shown.length) { alert('لا توجد طلبات في هذا اليوم'); return; }
+      const blob = await tableToPdfBlob('📋 جدول الطلبات — ' + coSelectedDate, buildOrdersTableHtml(shown));
+      await sendPdfBlob(blob, 'orders-table-' + coSelectedDate + '.pdf', mode === 'download');
     }
     window.ordersSendPdf = ordersSendPdf;
 
@@ -405,30 +416,33 @@
         }
         const orders = res.orders || [];
         window.__lastOrders = orders;
-        const news = orders.filter(o => o.status === 'جديد');
-        const preps = orders.filter(o => o.status === 'قيد التحضير');
-        const readys = orders.filter(o => o.status === 'جاهز');
         const today = todayStr();
-        const doneToday = orders.filter(o => o.status === 'تم التسليم' && (o.created_at || '').slice(0, 10) === today);
+        const selDate = (typeof coSelectedDate !== 'undefined' && coSelectedDate) || today;
+        const ofDate = orders.filter(o => (o.created_at || '').slice(0, 10) === selDate);
+        const news = ofDate.filter(o => o.status === 'جديد');
+        const preps = ofDate.filter(o => o.status === 'قيد التحضير');
+        const readys = ofDate.filter(o => o.status === 'جاهز');
+        const doneSel = ofDate.filter(o => o.status === 'تم التسليم');
 
-        // تنبيه صوتي عند وصول طلب جديد
+        // تنبيه صوتي عند وصول طلب جديد (فقط أثناء عرض اليوم الحالي)
         const ids = new Set(news.map(o => o.order_id));
-        if (knownNewIds.size > 0) {
+        if (selDate === today && knownNewIds.size > 0) {
           let hasNew = false;
           ids.forEach(id => { if (!knownNewIds.has(id)) hasNew = true; });
           if (hasNew && window.__sirenAlert) __sirenAlert('🚨 طلب جديد!');
         }
-        knownNewIds = ids;
+        if (selDate === today) knownNewIds = ids;
 
         document.getElementById('stNew').textContent = news.length;
         document.getElementById('stPrep').textContent = preps.length;
         document.getElementById('stReady').textContent = readys.length;
-        document.getElementById('stDoneToday').textContent = doneToday.length;
+        document.getElementById('stDoneToday').textContent = doneSel.length;
+        document.getElementById('stDoneLabel').textContent = selDate === today ? 'تم تسليمه اليوم' : ('تم تسليمه ' + selDate);
 
-        const shown = orders.filter(o => (o.created_at || '').slice(0, 10) === today);
+        const shown = ofDate;
         document.getElementById('ordersBody').innerHTML = shown.length
           ? shown.map(o => orderRowHtml(o)).join('')
-          : '<tr><td colspan="7" class="empty">لا توجد طلبات اليوم</td></tr>';
+          : '<tr><td colspan="7" class="empty">لا توجد طلبات في هذا اليوم</td></tr>';
       } catch (e) {}
     }
 
@@ -477,6 +491,7 @@
       document.getElementById('coDateInput').value = coSelectedDate;
       coUpdateTitle();
       loadCompanyOrders();
+      loadOrders();
     }
     window.coChangeDay = coChangeDay;
 
@@ -485,6 +500,7 @@
       if (v) coSelectedDate = v;
       coUpdateTitle();
       loadCompanyOrders();
+      loadOrders();
     }
     window.coDateChanged = coDateChanged;
 
@@ -493,6 +509,7 @@
       document.getElementById('coDateInput').value = coSelectedDate;
       coUpdateTitle();
       loadCompanyOrders();
+      loadOrders();
     }
     window.coGoToday = coGoToday;
 
@@ -526,7 +543,7 @@
           const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
           pkgTotals[label] = (pkgTotals[label] || 0) + (Number(o.meals) || 0);
         }));
-        document.getElementById('coPkgBadge').textContent = Object.keys(pkgTotals).map(k => k + ': ' + pkgTotals[k]).join(' · ') || '';
+        document.getElementById('coPkgBadge').innerHTML = Object.keys(pkgTotals).map(k => esc(k) + '= <b class="pkg-num">' + pkgTotals[k] + '</b>').join(' · ') || '';
         if (!active.length) {
           box.innerHTML = '<div style="font-size:12px;color:var(--muted)">لا توجد طلبات شركات في هذا اليوم</div>';
           return;
@@ -540,7 +557,7 @@
                 ${g.orders.map(o => {
                   const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
                   return `<tr>
-                    <td class="co-dept-cell">${o.department ? esc(o.department) : '—'}</td>
+                    <td class="co-dept-cell"${o.department ? ' style="color:' + deptColor(o.department) + '"' : ''}>${o.department ? esc(o.department) : '—'}</td>
                     <td class="co-meal-cell">${esc(label)}</td>
                     <td class="co-count-cell">${o.meals}</td>
                     <td class="co-notes-cell">${o.notes ? esc(o.notes) : '—'}</td>
