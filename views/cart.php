@@ -110,6 +110,31 @@
       font-size: 14px;
       background: var(--surface);
     }
+    /* ===== متابعة الطلبات ===== */
+    .track-card { background: var(--surface); border-radius: 16px; padding: 14px; margin: 14px 16px 4px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(20,20,30,0.04); }
+    .track-title { font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .track-filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .tfilter { border: 1px solid var(--border); background: var(--surface); border-radius: 20px; padding: 6px 12px; font-size: 11.5px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--text); }
+    .tfilter.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .track-filters input[type="date"] { border: 1px solid var(--border); border-radius: 20px; padding: 5px 10px; font-family: inherit; font-size: 11.5px; }
+    .track-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .torder { border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; background: var(--bg); }
+    .torder-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .torder-id { font-weight: 800; font-size: 12.5px; direction: ltr; }
+    .torder-date { color: var(--muted); font-size: 11px; }
+    .tstatus { font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 16px; }
+    .tstatus.new { background: #ffebe9; color: #ff3b30; }
+    .tstatus.preparing { background: #fff3e0; color: #ef6c00; }
+    .tstatus.ready { background: #e7f8ec; color: #2e7d32; }
+    .tstatus.done { background: #e5f0ff; color: #007aff; }
+    .tstatus.cancelled { background: #f0f0f5; color: #8b8b9a; }
+    .tstatus.unknown { background: #f0f0f5; color: #8b8b9a; }
+    .torder-items { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+    .torder-total { font-weight: 800; font-size: 13px; color: var(--primary); margin-top: 4px; }
+    .track-search { display: flex; gap: 8px; margin-top: 10px; }
+    .track-search input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 12.5px; }
+    .track-search button { border: none; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); color: #fff; border-radius: 12px; padding: 10px 16px; font-family: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; }
+    .track-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 14px; }
   </style>
 <script src="?asset=api.js"></script>
 </head>
@@ -122,6 +147,23 @@
     <a class="icon-btn" href="?page=login" title="دخول المستخدمين والأدمن">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     </a>
+  </div>
+
+  <div class="track-card" id="trackCard">
+    <div class="track-title">🚚 متابعة طلباتي</div>
+    <div class="track-filters">
+      <button class="tfilter active" onclick="setTrackFilter('all', this)">الكل</button>
+      <button class="tfilter" onclick="setTrackFilter('day', this)">اليوم</button>
+      <button class="tfilter" onclick="setTrackFilter('month', this)">هذا الشهر</button>
+      <button class="tfilter" onclick="setTrackFilter('year', this)">هذه السنة</button>
+      <input type="date" id="trackDate" onchange="setTrackFilter('date', document.getElementById('tfDateBtn'))" title="فلترة بتاريخ محدد">
+      <button class="tfilter" id="tfDateBtn" style="display:none" onclick="setTrackFilter('date', this)">التاريخ المحدد</button>
+    </div>
+    <div class="track-search">
+      <input type="text" id="trackOrderId" placeholder="🔍 تتبع طلب برقمه (من أي جهاز)">
+      <button onclick="trackByOrderId()">تتبع</button>
+    </div>
+    <div class="track-list" id="trackList"></div>
   </div>
 
   <div class="items" id="cartItems"></div>
@@ -270,9 +312,17 @@
         });
         btn.disabled = false;
         if (res.success) {
-          localStorage.removeItem('wahat_cart');
-          cart = [];
-          render();
+          // الاحتفاظ بالطلب في السلة + تسجيله في قائمة طلباتى للمتابعة
+          const myOrders = JSON.parse(localStorage.getItem('wahat_my_orders') || '[]');
+          myOrders.unshift({
+            orderId: res.orderId || '',
+            createdAt: new Date().toISOString(),
+            items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+            total: res.total,
+            status: 'جديد'
+          });
+          localStorage.setItem('wahat_my_orders', JSON.stringify(myOrders));
+          renderMyOrders();
           showOrderDone(res);
         } else {
           showToast(res.message || 'حدث خطأ', true);
@@ -284,6 +334,97 @@
     }
 
     render();
+
+    // ===== متابعة الطلبات (فلتر تاريخ / شهر / سنة + بحث برقم الطلب) =====
+    let trackFilter = 'all';
+    const STATUS_CLASS = { 'جديد': 'new', 'قيد التحضير': 'preparing', 'جاهز': 'ready', 'تم التسليم': 'done', 'ملغي': 'cancelled' };
+    const FINAL_STATUSES = ['تم التسليم', 'ملغي'];
+
+    function getMyOrders() { return JSON.parse(localStorage.getItem('wahat_my_orders') || '[]'); }
+
+    function setTrackFilter(f, btn) {
+      trackFilter = f;
+      document.querySelectorAll('.tfilter').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.getElementById('tfDateBtn').style.display = f === 'date' ? 'inline-block' : 'none';
+      renderMyOrders();
+    }
+
+    function statusClassOf(st) { return STATUS_CLASS[st] || 'unknown'; }
+
+    function renderMyOrders() {
+      const list = document.getElementById('trackList');
+      let orders = getMyOrders();
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const month = today.slice(0, 7);
+      const year = today.slice(0, 4);
+      const picked = document.getElementById('trackDate').value;
+      if (trackFilter === 'day') orders = orders.filter(o => (o.createdAt || '').slice(0, 10) === today);
+      if (trackFilter === 'month') orders = orders.filter(o => (o.createdAt || '').slice(0, 7) === month);
+      if (trackFilter === 'year') orders = orders.filter(o => (o.createdAt || '').slice(0, 4) === year);
+      if (trackFilter === 'date' && picked) orders = orders.filter(o => (o.createdAt || '').slice(0, 10) === picked);
+      orders = orders.slice(0, 50);
+      if (!orders.length) {
+        list.innerHTML = '<div class="track-empty">' + (trackFilter === 'all' ? 'لا توجد طلبات محفوظة على هذا الجهاز — اطلب وسيظهر هنا مع حالته' : 'لا توجد طلبات في هذا النطاق') + '</div>';
+        return;
+      }
+      list.innerHTML = orders.map((o, idx) =>
+        '<div class="torder">'
+        + '<div class="torder-head">'
+        + '<span class="torder-id">' + esc(o.orderId) + '</span>'
+        + '<span class="tstatus ' + statusClassOf(o.status) + '" id="tst-' + idx + '">' + esc(o.status) + '</span>'
+        + '</div>'
+        + '<div class="torder-date">' + esc((o.createdAt || '').replace('T', ' ').slice(0, 16)) + '</div>'
+        + '<div class="torder-items">' + (o.items || []).map(i => esc(i.name) + ' × ' + i.qty).join(' · ') + '</div>'
+        + '<div class="torder-total">' + esc(o.total ?? '') + ' ج.م</div>'
+        + '</div>'
+      ).join('');
+    }
+
+    async function refreshActiveOrders() {
+      const orders = getMyOrders();
+      const activeIdx = orders.map((o, i) => FINAL_STATUSES.includes(o.status) ? -1 : i).filter(i => i >= 0);
+      for (const idx of activeIdx.slice(0, 10)) {
+        try {
+          const res = await api('order_status', { orderId: orders[idx].orderId });
+          if (res.success && res.order && res.order.status !== orders[idx].status) {
+            orders[idx].status = res.order.status;
+            localStorage.setItem('wahat_my_orders', JSON.stringify(orders));
+          }
+        } catch (e) {}
+      }
+      renderMyOrders();
+    }
+
+    async function trackByOrderId() {
+      const oid = document.getElementById('trackOrderId').value.trim();
+      if (!oid) { showToast('أدخل رقم الطلب', true); return; }
+      try {
+        const res = await api('order_status', { orderId: oid });
+        if (!res.success) { showToast(res.message || 'الطلب غير موجود', true); return; }
+        const o = res.order;
+        const orders = getMyOrders();
+        const exist = orders.findIndex(x => x.orderId === o.orderId);
+        const entry = {
+          orderId: o.orderId,
+          createdAt: (o.createdAt || '').replace(' ', 'T'),
+          items: o.items || [],
+          total: o.total,
+          status: o.status
+        };
+        if (exist >= 0) orders[exist] = entry; else orders.unshift(entry);
+        localStorage.setItem('wahat_my_orders', JSON.stringify(orders));
+        setTrackFilter('all', document.querySelector('.tfilter'));
+        showToast('تم العثور على الطلب — الحالة: ' + o.status, false);
+      } catch (e) { showToast('خطأ في الاتصال', true); }
+    }
+
+    document.getElementById('trackDate').addEventListener('input', function () {
+      if (this.value) setTrackFilter('date', document.getElementById('tfDateBtn'));
+    });
+    renderMyOrders();
+    setInterval(refreshActiveOrders, 10000);
 
     // إشعار نجاح الطلب برقم الطلب + إرسال على واتس المطعم بنقرة واحدة (بدون توكن)
     function showOrderDone(res) {

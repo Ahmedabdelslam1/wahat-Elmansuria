@@ -88,6 +88,35 @@
     .btn-done { background: #e5f0ff; color: #007aff; }
     .empty { text-align: center; padding: 40px; color: var(--muted); }
 
+    /* ===== طلبات الشركات: تصميم جديد ===== */
+    .cof-card { background: var(--surface); border-radius: 16px; padding: 14px; margin: 12px; box-shadow: 0 2px 12px rgba(20,20,30,0.06); border: 1px solid var(--border); }
+    .cof-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+    .cof-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .cof-field label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 4px; }
+    .cof-field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 13px; background: var(--bg); }
+    .cof-items-label { font-size: 12px; font-weight: 800; color: var(--muted); display: flex; justify-content: space-between; align-items: center; margin: 4px 0 6px; }
+    .cof-add { border: none; background: #e7f8ec; color: #2e7d32; border-radius: 10px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .cof-head-row { display: grid; grid-template-columns: 1fr 62px 78px 34px; gap: 6px; font-size: 10.5px; font-weight: 800; color: var(--muted); padding: 0 2px 4px; }
+    .cof-item { display: grid; grid-template-columns: 1fr 62px 78px 34px; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .cof-item select, .cof-item input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 12.5px; background: var(--bg); }
+    .cof-del { border: none; background: #ffebe9; color: #ff3b30; border-radius: 10px; height: 34px; cursor: pointer; font-weight: 800; }
+    #coNotes { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 12.5px; background: var(--bg); margin-bottom: 10px; }
+    .co-live-total { display: flex; justify-content: space-between; background: #fff8ec; border: 1px solid #ffe3b3; color: #8a5a00; border-radius: 12px; padding: 10px 14px; font-weight: 800; font-size: 13.5px; margin-bottom: 10px; }
+    #coLiveTotal { font-size: 16px; }
+    .co-submit { width: 100%; padding: 13px; border: none; border-radius: 13px; background: linear-gradient(90deg, #34c759, #2e7d32); color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px -6px rgba(52,199,89,0.55); }
+    .co-grand { display: flex; justify-content: space-between; background: var(--surface); margin: 12px; border-radius: 14px; padding: 12px 16px; font-weight: 800; font-size: 13.5px; border: 1px solid var(--border); }
+    .co-card { background: var(--surface); border-radius: 16px; margin: 10px 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(20,20,30,0.05); }
+    .co-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; cursor: pointer; gap: 8px; flex-wrap: wrap; }
+    .co-head .cname { font-weight: 800; font-size: 13.5px; color: #2e7d32; }
+    .co-head .ctotal { font-size: 11.5px; color: var(--muted); font-weight: 800; }
+    .co-body { display: none; padding: 0 10px 10px; }
+    .co-body.show { display: block; }
+    .co-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; padding: 9px 6px; border-top: 1px dashed var(--border); flex-wrap: wrap; }
+    .act-btn { border: none; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .act-edit { background: #e5f0ff; color: #007aff; }
+    .act-cancel { background: #fff3e0; color: #ef6c00; }
+    .act-del { background: #ffebe9; color: #ff3b30; }
+
     /* المنيو (عرض فقط) */
     .menu-search { padding: 10px 14px 4px; }
     .menu-search input {
@@ -160,26 +189,32 @@
     <div class="menu-grid" id="menuGrid"></div>
   </div>
 
-  <!-- طلبات الشركات: وجبات جافة ×50 / ×100 -->
+  <!-- طلبات الشركات (تصميم جديد: بنود متعددة + اقتراح تلقائي) -->
   <div class="panel" id="panel-companies">
-    <div class="co-form">
-      <div class="co-grid">
-        <input class="wide" id="coCompany" placeholder="🏢 اسم الشركة" list="coCompaniesList">
-        <input class="wide" id="coDepartment" placeholder="🏬 القسم / الموقع (اختياري)">
-        <select id="coPackage" onchange="coPackageChanged()">
-          <option value="جافة ×50">وجبة جافة ×50</option>
-          <option value="جافة ×100">وجبة جافة ×100</option>
-          <option value="من المنيو">🍽️ صنف من المنيو</option>
-        </select>
-        <select id="coItem" style="display:none" onchange="coItemPicked()"></select>
-        <input id="coMeals" type="number" min="1" placeholder="عدد الوجبات" oninput="coUpdateTotal()">
-        <input id="coPrice" type="number" min="0" step="0.5" placeholder="قيمة الوجبة (ج.م)" oninput="coUpdateTotal()">
-        <input id="coNotes" placeholder="ملاحظات (اختياري)">
-        <div class="co-live-total"><span>إجمالي طلب الشركة</span><span id="coLiveTotal">0 ج.م</span></div>
-        <button class="co-submit" id="coSubmitBtn" onclick="submitCompanyOrder()">🏢 تسجيل طلب الشركة</button>
-        <button class="co-submit" id="coEditCancelBtn" style="display:none;background:#eee;color:#555" onclick="coResetForm()">✖ خروج من وضع التعديل</button>
+    <div class="cof-card">
+      <div class="cof-title">🏢 طلب شركة</div>
+      <div class="cof-row2">
+        <div class="cof-field">
+          <label>اسم الشركة</label>
+          <input id="coCompany" list="coCompaniesList" placeholder="اكتب أو اختر من القائمة">
+        </div>
+        <div class="cof-field">
+          <label>القسم / الموقع</label>
+          <input id="coDepartment" list="coDepartmentsList" placeholder="اختياري">
+        </div>
       </div>
       <datalist id="coCompaniesList"></datalist>
+      <datalist id="coDepartmentsList"></datalist>
+      <div class="cof-items-label">
+        <span>🍽️ بنود الطلب</span>
+        <button class="cof-add" onclick="coAddItemRow()">➕ إضافة بند</button>
+      </div>
+      <div class="cof-head-row"><span>البند</span><span>العدد</span><span>سعر الوحدة</span><span></span></div>
+      <div id="coItemsWrap"></div>
+      <input id="coNotes" placeholder="📝 ملاحظات — تتسجل تلقائيًا مع الطلب">
+      <div class="co-live-total"><span>إجمالي الطلب</span><span id="coLiveTotal">0 ج.م</span></div>
+      <button class="co-submit" id="coSubmitBtn" onclick="submitCompanyOrder()">💾 حفظ طلب الشركة</button>
+      <button class="co-submit" id="coEditCancelBtn" style="display:none;background:#eee;color:#555" onclick="coResetForm()">✖ خروج من وضع التعديل</button>
     </div>
     <div class="co-grand" id="coGrand" style="display:none">
       <span>إجمالي شركات اليوم: <span id="coGrandMeals">0</span> وجبة</span>
@@ -205,7 +240,7 @@
       btn.classList.add('active');
       document.getElementById('panel-' + id).classList.add('active');
       if (id === 'menu' && cashierMenu.length === 0) loadMenu();
-      if (id === 'companies') loadCompaniesToday();
+      if (id === 'companies') { loadCompaniesToday(); loadCompaniesList(); }
     }
 
     async function loadMenu() {
@@ -282,44 +317,80 @@
       document.getElementById('tdNew').textContent = orders.filter(o => o.status === 'جديد').length;
       document.getElementById('tdReady').textContent = orders.filter(o => o.status === 'جاهز').length;
     }
-    // ===== طلبات الشركات =====
-    function coUpdateTotal() {
-      const meals = parseInt(document.getElementById('coMeals').value) || 0;
-      const price = parseFloat(document.getElementById('coPrice').value) || 0;
-      document.getElementById('coLiveTotal').textContent = (meals * price) + ' ج.م';
+    // ===== طلبات الشركات (فورم جديد: بنود متعددة + اقتراح تلقائي) =====
+    let coItemOptionsHtml = '';
+
+    async function coEnsureMenu() {
+      if (!cashierMenu.length) await loadMenu();
+      coItemOptionsHtml = '';
     }
 
-    async function coPackageChanged() {
-      const pkg = document.getElementById('coPackage').value;
-      const isMenu = pkg === 'من المنيو';
-      const sel = document.getElementById('coItem');
-      sel.style.display = isMenu ? 'block' : 'none';
-      if (isMenu && !sel.options.length) {
-        if (!cashierMenu.length) await loadMenu();
-        sel.innerHTML = '<option value="">— اختر الصنف —</option>' + cashierMenu.map(i =>
-          '<option value="' + esc(i.id) + '" data-price="' + esc(i.price) + '">' + esc(i.name) + ' (' + esc(i.price) + ' ج.م)</option>'
+    function coBuildItemOptions() {
+      if (!coItemOptionsHtml) {
+        coItemOptionsHtml = '<option value="">— اختر البند —</option>' + cashierMenu.map(i =>
+          '<option value="' + esc(i.name) + '" data-price="' + esc(i.price) + '">' + esc(i.name) + ' (' + esc(i.price) + ' ج.م)</option>'
         ).join('');
       }
-      if (isMenu) coItemPicked(); else { document.getElementById('coPrice').value = ''; coUpdateTotal(); }
+      return coItemOptionsHtml;
     }
 
-    function coItemPicked() {
-      const sel = document.getElementById('coItem');
-      const opt = sel.options[sel.selectedIndex];
-      if (opt && opt.dataset.price) document.getElementById('coPrice').value = opt.dataset.price;
+    async function coAddItemRow(itemName, qty, price) {
+      await coEnsureMenu();
+      const wrap = document.getElementById('coItemsWrap');
+      const row = document.createElement('div');
+      row.className = 'cof-item';
+      row.innerHTML =
+        '<select class="cof-item-sel" onchange="coItemChanged(this)">' + coBuildItemOptions() + '</select>' +
+        '<input type="number" class="cof-qty" min="1" value="' + (qty || 1) + '" placeholder="العدد" oninput="coUpdateTotal()">' +
+        '<input type="number" class="cof-price" min="0" step="0.5" value="' + (price != null ? price : '') + '" placeholder="ج.م" oninput="coUpdateTotal()">' +
+        '<button class="cof-del" onclick="coRemoveItemRow(this)" title="حذف البند">✖</button>';
+      wrap.appendChild(row);
+      const sel = row.querySelector('.cof-item-sel');
+      if (itemName) {
+        if (![...sel.options].some(o => o.value === itemName)) {
+          const opt = document.createElement('option');
+          opt.value = itemName;
+          opt.dataset.price = price != null ? price : '';
+          opt.textContent = itemName + (price != null ? ' (' + price + ' ج.م)' : '');
+          sel.appendChild(opt);
+        }
+        sel.value = itemName;
+      }
       coUpdateTotal();
+      return row;
+    }
+
+    function coRemoveItemRow(btn) {
+      btn.closest('.cof-item').remove();
+      if (!document.querySelectorAll('#coItemsWrap .cof-item').length) coAddItemRow();
+      coUpdateTotal();
+    }
+
+    function coItemChanged(sel) {
+      const opt = sel.options[sel.selectedIndex];
+      if (opt && opt.dataset.price) sel.closest('.cof-item').querySelector('.cof-price').value = opt.dataset.price;
+      coUpdateTotal();
+    }
+
+    function coUpdateTotal() {
+      let total = 0;
+      document.querySelectorAll('#coItemsWrap .cof-item').forEach(r => {
+        const qty = parseInt(r.querySelector('.cof-qty').value) || 0;
+        const price = parseFloat(r.querySelector('.cof-price').value) || 0;
+        total += qty * price;
+      });
+      document.getElementById('coLiveTotal').textContent = Math.round(total) + ' ج.م';
     }
 
     let editCoId = null;
 
     function coResetForm() {
       editCoId = null;
-      document.getElementById('coSubmitBtn').textContent = '🏢 تسجيل طلب الشركة';
+      document.getElementById('coSubmitBtn').textContent = '💾 حفظ طلب الشركة';
       document.getElementById('coEditCancelBtn').style.display = 'none';
-      ['coCompany', 'coDepartment', 'coMeals', 'coPrice', 'coNotes'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('coPackage').value = 'جافة ×50';
-      document.getElementById('coItem').style.display = 'none';
-      coUpdateTotal();
+      ['coCompany', 'coDepartment', 'coNotes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('coItemsWrap').innerHTML = '';
+      coAddItemRow();
     }
 
     async function coEditRow(id) {
@@ -328,31 +399,13 @@
       editCoId = id;
       document.getElementById('coCompany').value = o.company_name || '';
       document.getElementById('coDepartment').value = o.department || '';
-      document.getElementById('coMeals').value = o.meals || 1;
-      document.getElementById('coPrice').value = o.price || '';
       document.getElementById('coNotes').value = o.notes || '';
-      const pkgSel = document.getElementById('coPackage');
-      pkgSel.value = ['جافة ×50', 'جافة ×100', 'من المنيو'].includes(o.package) ? o.package : 'جافة ×50';
-      const itemSel = document.getElementById('coItem');
-      if (pkgSel.value === 'من المنيو') {
-        await coPackageChanged();
-        const wanted = o.item_name || '';
-        let opt = [...itemSel.options].find(x => x.textContent.replace(/ \(.*\)/, '').trim() === wanted);
-        if (!opt) {
-          opt = document.createElement('option');
-          opt.value = 'custom-' + wanted;
-          opt.dataset.price = o.price;
-          opt.textContent = wanted + ' (' + o.price + ' ج.م)';
-          itemSel.appendChild(opt);
-        }
-        itemSel.value = opt.value;
-      } else {
-        itemSel.style.display = 'none';
-      }
+      const label = o.package === 'من المنيو' && o.item_name ? o.item_name : o.package;
+      document.getElementById('coItemsWrap').innerHTML = '';
+      await coAddItemRow(label, o.meals, o.price);
       document.getElementById('coSubmitBtn').textContent = '💾 حفظ التعديلات';
       document.getElementById('coEditCancelBtn').style.display = 'block';
-      coUpdateTotal();
-      document.querySelector('.co-form').scrollIntoView({ behavior: 'smooth' });
+      document.querySelector('.cof-card').scrollIntoView({ behavior: 'smooth' });
     }
 
     async function coCancelRow(id) {
@@ -374,34 +427,40 @@
     async function submitCompanyOrder() {
       const companyName = document.getElementById('coCompany').value.trim();
       const department = document.getElementById('coDepartment').value.trim();
-      const packageType = document.getElementById('coPackage').value;
-      let itemName = '';
-      if (packageType === 'من المنيو') {
-        const sel = document.getElementById('coItem');
-        const opt = sel.options[sel.selectedIndex];
-        if (!sel.value || !opt) { alert('اختر الصنف من المنيو'); return; }
-        itemName = opt.textContent.replace(/ \(.*\)/, '').trim();
-      }
-      const meals = parseInt(document.getElementById('coMeals').value) || 0;
-      const price = parseFloat(document.getElementById('coPrice').value) || 0;
       const notes = document.getElementById('coNotes').value.trim();
       if (!companyName) { alert('أدخل اسم الشركة'); return; }
-      if (meals <= 0) { alert('أدخل عدد الوجبات'); return; }
-      if (price <= 0) { alert('أدخل قيمة الوجبة'); return; }
+      const items = [];
+      document.querySelectorAll('#coItemsWrap .cof-item').forEach(r => {
+        const name = r.querySelector('.cof-item-sel').value.trim();
+        const qty = parseInt(r.querySelector('.cof-qty').value) || 0;
+        const price = parseFloat(r.querySelector('.cof-price').value) || 0;
+        if (name) items.push({ name, qty, price });
+      });
+      if (!items.length) { alert('أضف بندًا واحدًا على الأقل'); return; }
+      if (items.some(i => i.qty <= 0 || i.price <= 0)) { alert('تحقق من العدد والسعر لكل بند'); return; }
       const btn = document.getElementById('coSubmitBtn');
       btn.disabled = true;
       try {
-        const payload = { companyName, department, package: packageType, itemName, meals, price, notes };
         const res = editCoId
-          ? await api('update_company_order', Object.assign({ id: editCoId }, payload))
-          : await api('add_company_order', payload);
+          ? await api('update_company_order', { id: editCoId, companyName, department, package: 'من المنيو', itemName: items[0].name, meals: items[0].qty, price: items[0].price, notes })
+          : await api('save_company_order', { companyName, department, notes, items });
         btn.disabled = false;
         if (res.success) {
-          alert(editCoId ? 'تم تعديل البند بنجاح' : res.message);
+          alert(res.message || 'تم الحفظ بنجاح');
           coResetForm();
           loadCompaniesToday();
         } else alert(res.message || 'خطأ');
       } catch (e) { btn.disabled = false; alert('خطأ في الاتصال'); }
+    }
+
+    async function loadCompaniesList() {
+      try {
+        const res = await api('companies_list');
+        if (res.success) {
+          document.getElementById('coCompaniesList').innerHTML = (res.companies || []).map(c => '<option value="' + esc(c) + '">').join('');
+          document.getElementById('coDepartmentsList').innerHTML = (res.departments || []).map(d => '<option value="' + esc(d) + '">').join('');
+        }
+      } catch (e) {}
     }
 
     async function loadCompaniesToday() {
@@ -550,6 +609,7 @@
 
     loadOrders('all');
     setInterval(() => loadOrders(currentFilter), 12000);
+    coResetForm();
   </script>
   <?php include __DIR__ . '/_order_edit.php'; ?>
   <?php include __DIR__ . '/_wa.php'; ?>

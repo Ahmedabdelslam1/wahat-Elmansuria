@@ -160,6 +160,13 @@ function init_db(PDO $db) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'جديد'");
         }
         $db->exec("
+            CREATE TABLE IF NOT EXISTS companies (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                created_at DATETIME NOT NULL,
+                created_by VARCHAR(100) DEFAULT '',
+                UNIQUE KEY uq_company_name (name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(100) NOT NULL,
@@ -261,6 +268,14 @@ function init_db(PDO $db) {
         if (!column_exists($db, 'company_orders', 'status')) {
             $db->exec("ALTER TABLE company_orders ADD COLUMN status VARCHAR(20) DEFAULT 'جديد'");
         }
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS companies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                created_by TEXT DEFAULT ''
+            );
+        ");
         $db->exec("
             CREATE TABLE IF NOT EXISTS audit_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1275,6 +1290,174 @@ function api_add_company_order($data) {
     $stmt->execute([$company, $department, $package, $label, $meals, $price, $total, $notes, date('Y-m-d'), date('Y-m-d H:i:s'), $user['username'], $orderId]);
     log_activity('إضافة طلب شركة', 'طلب شركة', $company, $package . ($package === 'من المنيو' ? ' (' . $itemName . ')' : '') . ' × ' . $meals . ' = ' . $total . ' ج.م');
     json_out(['success' => true, 'message' => 'تم تسجيل طلب الشركة بنجاح', 'total' => $total, 'orderId' => $orderId]);
+}
+
+/** قائمة الشركات المعتمدة + الأسماء السابقة + الأقسام السابقة (للاقتراح التلقائي) */
+function api_companies_list() {
+    $u = current_user();
+    if (!$u || !array_intersect(['cashier', 'admin', 'kitchen'], user_allowed_pages($u))) {
+        json_out(['success' => false, 'message' => 'غير مصرح']);
+    }
+    $db = db();
+    $master = [];
+    $res = $db->query('SELECT name FROM companies ORDER BY name');
+    while ($r = $res->fetch()) $master[] = (string)$r['name'];
+    $used = [];
+    $res = $db->query('SELECT DISTINCT company_name FROM company_orders ORDER BY company_name');
+    while ($r = $res->fetch()) $used[] = (string)$r['company_name'];
+    $depts = [];
+    $res = $db->query("SELECT DISTINCT department FROM company_orders WHERE department != '' ORDER BY department");
+    while ($r = $res->fetch()) $depts[] = (string)$r['department'];
+    json_out(['success' => true, 'companies' => array_values(array_unique(array_merge($master, $used))), 'departments' => $depts]);
+}
+
+/** قائمة الشركات المعتمدة (للإدارة في لوحة التحكم) */
+function api_manage_company_list() {
+    $user = require_page_access('admin');
+    $db = db();
+    $res = $db->query('SELECT id, name, created_at FROM companies ORDER BY name');
+    $companies = [];
+    while ($r = $res->fetch()) {
+        $companies[] = ['id' => (int)$r['id'], 'name' => (string)$r['name'], 'created_at' => (string)$r['created_at']];
+    }
+    json_out(['success' => true, 'companies' => $companies]);
+}
+
+/** إدارة قائمة الشركات المعتمدة (لوحة التحكم) */
+function api_manage_company($data) {
+    $user = require_page_access('admin');
+    $db = db();
+    $op = (string)($data['op'] ?? '');
+    if ($op === 'add') {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+        $exists = db_scalar($db, 'SELECT COUNT(*) FROM companies WHERE name = ?', [$name]);
+        if ($exists) json_out(['success' => false, 'message' => 'الشركة موجودة بالفعل']);
+        $st = $db->prepare('INSERT INTO companies (name, created_at, created_by) VALUES (?, ?, ?)');
+        $st->execute([$name, date('Y-m-d H:i:s'), $user['username']]);
+        log_activity('إضافة شركة', 'قائمة الشركات', $name, '');
+        json_out(['success' => true, 'message' => 'تمت إضافة الشركة']);
+    }
+    if ($op === 'delete') {
+        $id = (int)($data['id'] ?? 0);
+        $st = $db->prepare('DELETE FROM companies WHERE id = ?');
+        $st->execute([$id]);
+        log_activity('حذف شركة', 'قائمة الشركات', (string)$id, 'حذف من القائمة المعتمدة');
+        json_out(['success' => true, 'message' => 'تم حذف الشركة من القائمة']);
+    }
+    json_out(['success' => false, 'message' => 'عملية غير معروفة']);
+}
+
+/** حفظ طلب شركة متعدد البنود: يُضاف على الطلب الموجود لنفس الشركة والقسم في نفس اليوم */
+function api_save_company_order($data) {
+    $user = require_page_access('cashier');
+    $db = db();
+    $company = trim((string)($data['companyName'] ?? ''));
+    $department = trim((string)($data['department'] ?? ''));
+    $notes = trim((string)($data['notes'] ?? ''));
+    $inputItems = is_array($data['items'] ?? null) ? $data['items'] : [];
+    if ($company === '') json_out(['success' => false, 'message' => 'أدخل اسم الشركة']);
+    if (!$inputItems) json_out(['success' => false, 'message' => 'أضف بندًا واحدًا على الأقل']);
+
+    $items = [];
+    foreach ($inputItems as $it) {
+        $name = trim((string)($it['name'] ?? ''));
+        $qty = (int)($it['qty'] ?? 0);
+        $price = (float)($it['price'] ?? 0);
+        if ($name === '' || $qty <= 0 || $price <= 0) continue;
+        $items[] = ['name' => $name, 'qty' => $qty, 'price' => $price];
+    }
+    if (!$items) json_out(['success' => false, 'message' => 'تحقق من البنود: الاسم والعدد والسعر مطلوبة']);
+
+    $today = date('Y-m-d');
+    // البحث عن طلب نشط موجود لنفس الشركة والقسم اليوم للإضافة عليه
+    $orderId = '';
+    $find = $db->prepare("SELECT order_id FROM company_orders WHERE company_name = ? AND department = ? AND order_date = ? AND status != 'ملغي' AND order_id != '' ORDER BY id DESC LIMIT 1");
+    $find->execute([$company, $department, $today]);
+    $row = $find->fetchColumn();
+    if ($row) {
+        $chk = $db->prepare('SELECT order_id FROM orders WHERE order_id = ?');
+        $chk->execute([(string)$row]);
+        if ($chk->fetchColumn()) $orderId = (string)$row;
+    }
+
+    $newTotal = 0.0;
+    foreach ($items as $it) $newTotal += $it['price'] * $it['qty'];
+    $appended = $orderId !== '';
+
+    if ($appended) {
+        // قراءة الطلب الموجود ودمج البنود الجديدة + إرفاق الملاحظات تلقائيًا
+        $q = $db->prepare('SELECT items_json, notes, status FROM orders WHERE order_id = ?');
+        $q->execute([$orderId]);
+        $ord = $q->fetch();
+        $oldItems = json_decode((string)$ord['items_json'], true);
+        if (!is_array($oldItems)) $oldItems = [];
+        foreach ($items as $it) $oldItems[] = ['id' => 0, 'name' => $it['name'], 'price' => $it['price'], 'qty' => $it['qty']];
+        $total = 0.0;
+        foreach ($oldItems as $it) $total += (float)($it['price'] ?? 0) * (int)($it['qty'] ?? 1);
+        $mergedNotes = trim((string)$ord['notes']);
+        if ($notes !== '') $mergedNotes = ($mergedNotes === '' ? $notes : $mergedNotes . ' | ' . $notes);
+        $newStatus = ($ord['status'] === 'تم التسليم') ? 'جديد' : (string)$ord['status'];
+        $up = $db->prepare('UPDATE orders SET items_json = ?, total = ?, notes = ?, status = ? WHERE order_id = ?');
+        $up->execute([json_encode($oldItems, JSON_UNESCAPED_UNICODE), $total, $mergedNotes, $newStatus, $orderId]);
+    } else {
+        $orderId = 'ORD-' . date('Ymd-His') . '-' . substr((string)mt_rand(1000, 9999), 0, 4);
+        $itemsJson = json_encode(array_map(function ($it) {
+            return ['id' => 0, 'name' => $it['name'], 'price' => $it['price'], 'qty' => $it['qty']];
+        }, $items), JSON_UNESCAPED_UNICODE);
+        $ordStmt = $db->prepare('INSERT INTO orders (order_id, created_at, customer_name, phone, items_json, total, status, order_type, notes, address, delivery_fee, created_by, company_name, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $ordStmt->execute([
+            $orderId, date('Y-m-d H:i:s'), $company, '', $itemsJson, $newTotal, 'جديد', 'شركات',
+            $notes, '', 0, $user['username'], $company, $department,
+        ]);
+    }
+
+    // تسجيل كل بند في جدول الشركات (للتقارير) مرتبطًا بنفس الطلب
+    $st = $db->prepare('INSERT INTO company_orders (company_name, department, package, item_name, meals, price, total, notes, order_date, created_at, created_by, order_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    foreach ($items as $it) {
+        $st->execute([$company, $department, 'من المنيو', $it['name'], $it['qty'], $it['price'], $it['price'] * $it['qty'], $notes, $today, date('Y-m-d H:i:s'), $user['username'], $orderId, 'جديد']);
+    }
+
+    // إضافة الشركة لقائمة الشركات تلقائيًا إن لم تكن موجودة
+    $exists = db_scalar($db, 'SELECT COUNT(*) FROM companies WHERE name = ?', [$company]);
+    if (!$exists) {
+        $add = $db->prepare('INSERT INTO companies (name, created_at, created_by) VALUES (?, ?, ?)');
+        $add->execute([$company, date('Y-m-d H:i:s'), $user['username']]);
+    }
+
+    $itemsDesc = implode(' + ', array_map(function ($it) { return $it['name'] . ' × ' . $it['qty']; }, $items));
+    log_activity($appended ? 'إضافة بنود على طلب شركة' : 'تسجيل طلب شركة', 'طلب شركة', $company, $itemsDesc . ' = ' . $newTotal . ' ج.م' . ($department ? ' — قسم: ' . $department : '') . ($notes ? ' — ملاحظات: ' . $notes : ''));
+    json_out([
+        'success' => true,
+        'message' => $appended ? 'تمت الإضافة على طلب الشركة الموجود بنجاح' : 'تم تسجيل طلب الشركة بنجاح',
+        'total' => $newTotal,
+        'orderId' => $orderId,
+        'appended' => $appended,
+    ]);
+}
+
+/** تتبع حالة طلب للعميل (عام برقم الطلب) */
+function api_order_status($data) {
+    $orderId = trim((string)($data['orderId'] ?? ''));
+    if ($orderId === '') json_out(['success' => false, 'message' => 'أدخل رقم الطلب']);
+    $db = db();
+    $st = $db->prepare('SELECT order_id, created_at, status, total, items_json, order_type FROM orders WHERE order_id = ?');
+    $st->execute([$orderId]);
+    $o = $st->fetch();
+    if (!$o) json_out(['success' => false, 'message' => 'الطلب غير موجود']);
+    $items = json_decode((string)$o['items_json'], true);
+    if (!is_array($items)) $items = [];
+    json_out([
+        'success' => true,
+        'order' => [
+            'orderId' => (string)$o['order_id'],
+            'createdAt' => (string)$o['created_at'],
+            'status' => (string)$o['status'],
+            'total' => (float)$o['total'],
+            'type' => (string)$o['order_type'],
+            'items' => array_map(function ($it) { return ['name' => (string)($it['name'] ?? ''), 'qty' => (int)($it['qty'] ?? 1), 'price' => (float)($it['price'] ?? 0)]; }, $items),
+        ],
+    ]);
 }
 
 /** طلبات شركات اليوم: مجمعة باسم الشركة مع الإجماليات والتفاصيل */

@@ -19,7 +19,7 @@ if (isset($_GET['api'])) {
     $data = json_input();
 
     // حماية CSRF لكل الطلبات المغيرة للبيانات (ما عدا الدخول)
-    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'update_user', 'add_company_order', 'update_order', 'cancel_order', 'delete_order', 'update_company_order', 'cancel_company_order', 'delete_company_order', 'set_company_item_status', 'report', 'update_settings', 'reset_accounts'], true)) {
+    if (in_array($action, ['logout', 'place_order', 'update_status', 'save_item', 'toggle_item', 'add_user', 'update_permissions', 'update_user', 'add_company_order', 'update_order', 'cancel_order', 'delete_order', 'update_company_order', 'cancel_company_order', 'delete_company_order', 'set_company_item_status', 'save_company_order', 'manage_company', 'report', 'update_settings', 'reset_accounts'], true)) {
         $hdr = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!hash_equals($_SESSION['csrf'], (string)$hdr)) {
             json_out(['success' => false, 'message' => 'انتهت الجلسة، أعد تحميل الصفحة']);
@@ -42,6 +42,11 @@ if (isset($_GET['api'])) {
         case 'update_user':          api_update_user($data); break;
         case 'public_settings':       api_public_settings(); break;
         case 'add_company_order':     api_add_company_order($data); break;
+        case 'save_company_order':    api_save_company_order($data); break;
+        case 'companies_list':        api_companies_list(); break;
+        case 'manage_company':        api_manage_company($data); break;
+        case 'manage_company_list':    api_manage_company_list(); break;
+        case 'order_status':          api_order_status($data); break;
         case 'company_today':         api_company_today($data); break;
         case 'company_report':        api_company_report($data); break;
         case 'update_company_order':  api_update_company_order($data); break;

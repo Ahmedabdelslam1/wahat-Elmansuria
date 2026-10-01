@@ -116,6 +116,7 @@
     <button class="tab" onclick="showPanel('menu', this)">🍽️ المنيو</button>
     <button class="tab" onclick="showPanel('users', this)">👥 المستخدمين</button>
     <button class="tab" onclick="showPanel('orders', this)">📋 الطلبات</button>
+    <button class="tab" onclick="showPanel('companies', this)">🏢 الشركات</button>
     <button class="tab" onclick="showPanel('reports', this)">📈 التقارير</button>
     <button class="tab" onclick="showPanel('settings', this)">⚙️ الإعدادات</button>
   </div>
@@ -230,6 +231,27 @@
   </div>
 
   <!-- Reports -->
+  <div class="panel" id="panel-companies">
+    <div class="card">
+      <h3>🏢 قائمة الشركات المعتمدة</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="newCompanyName" placeholder="اسم الشركة الجديدة" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--border,#ececf2);border-radius:12px;font-family:inherit;font-size:13px">
+        <button class="primary" onclick="addCompany()">➕ إضافة</button>
+      </div>
+      <div id="companiesList" style="margin-top:12px"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>📊 تقرير طلبات الشركات</h3>
+      <div class="co-date-row">
+        <div class="form-row"><label>من تاريخ</label><input type="date" id="coFrom"></div>
+        <div class="form-row"><label>إلى تاريخ</label><input type="date" id="coTo"></div>
+        <button class="primary" onclick="loadCompanyReport()">عرض التقرير</button>
+        <button class="primary" style="background:#eee;color:#555" onclick="loadCompanyReportToday()">تقرير اليوم</button>
+      </div>
+      <div id="companyReportResult" style="margin-top:12px"></div>
+    </div>
+  </div>
+
   <div class="panel" id="panel-reports">
     <div class="card">
       <h3>تقرير المبيعات اليومي</h3>
@@ -240,17 +262,6 @@
       <button class="primary" onclick="loadDailyReport()">عرض التقرير</button>
     </div>
     <div id="reportResult"></div>
-
-    <div class="card" style="margin-top:16px">
-      <h3>🏢 تقرير طلبات الشركات (وجبات جافة)</h3>
-      <div class="co-date-row">
-        <div class="form-row"><label>من تاريخ</label><input type="date" id="coFrom"></div>
-        <div class="form-row"><label>إلى تاريخ</label><input type="date" id="coTo"></div>
-        <button class="primary" onclick="loadCompanyReport()">عرض التقرير</button>
-        <button class="primary" style="background:#eee;color:#555" onclick="loadCompanyReportToday()">تقرير اليوم</button>
-      </div>
-      <div id="companyReportResult" style="margin-top:12px"></div>
-    </div>
 
     <div class="card" style="margin-top:16px">
       <h3>👥 سجل عمليات المستخدمين (إضافة / تعديل / إلغاء / حذف)</h3>
@@ -316,6 +327,7 @@
       if (id === 'pos' && window.posInit) posInit();
       if (id === 'dashboard') loadDashboard();
       if (id === 'users') loadUsers();
+      if (id === 'companies') loadCompaniesAdmin();
       if (id === 'reports') {
         document.getElementById('reportDate').valueAsDate = new Date();
         loadDailyReport();
@@ -476,6 +488,49 @@
       try {
         const res = await api('delete_order', { orderId });
         if (res.success) { alert('تم حذف الطلب'); orderActionsRefresh(); } else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+
+    // ===== إدارة قائمة الشركات =====
+    let adminCompanies = [];
+    async function loadCompaniesAdmin() {
+      try {
+        const res = await api('companies_list');
+        if (!res.success) return;
+        // القائمة المعتمدة فقط للإدارة (الاسم الموجود بالجدول الأساسي)
+        const listRes = await api('manage_company_list');
+        adminCompanies = listRes.success ? (listRes.companies || []) : [];
+        renderCompaniesAdmin();
+      } catch (e) {}
+    }
+    function renderCompaniesAdmin() {
+      const box = document.getElementById('companiesList');
+      if (!adminCompanies.length) {
+        box.innerHTML = '<div style="color:#8b8b9a;font-size:12.5px">لا توجد شركات مضافة بعد — أي شركة يسجل لها الكاشير طلبًا تُضاف تلقائيًا هنا</div>';
+        return;
+      }
+      box.innerHTML = adminCompanies.map(c =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px dashed #ececf2;font-size:13px;font-weight:700">'
+        + '<span>🏢 ' + esc(c.name) + '</span>'
+        + '<span style="color:#8b8b9a;font-size:11px">' + esc(c.created_at || '') + '</span>'
+        + '<button class="primary" style="background:#ffebe9;color:#ff3b30;padding:5px 10px;font-size:11.5px" onclick="deleteCompany(' + c.id + ')">🗑 حذف</button>'
+        + '</div>'
+      ).join('');
+    }
+    async function addCompany() {
+      const name = document.getElementById('newCompanyName').value.trim();
+      if (!name) { alert('أدخل اسم الشركة'); return; }
+      try {
+        const res = await api('manage_company', { op: 'add', name });
+        if (res.success) { document.getElementById('newCompanyName').value = ''; loadCompaniesAdmin(); }
+        else alert(res.message || 'خطأ');
+      } catch (e) { alert('خطأ في الاتصال'); }
+    }
+    async function deleteCompany(id) {
+      if (!confirm('حذف الشركة من القائمة المعتمدة؟ (طلباتها السابقة لن تُحذف)')) return;
+      try {
+        const res = await api('manage_company', { op: 'delete', id });
+        if (res.success) loadCompaniesAdmin(); else alert(res.message || 'خطأ');
       } catch (e) { alert('خطأ في الاتصال'); }
     }
 
